@@ -3,9 +3,10 @@ import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilitie
 import argon2 from "argon2";
 import path from "path";
 import { fileURLToPath } from 'url';
-import fs from "fs"
 
-//handle user
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 export const getUsers = async (req, res) => {
     try {
         const response = await Users.findAll();
@@ -130,7 +131,6 @@ export const deleteUser = async (req, res) => {
     }
 }
 
-//handle house
 export const getHouse = async (req, res) => {
     try {
         const houses = await Houses.findAll();
@@ -335,9 +335,6 @@ export const getHouseInputQr = async (req, res) => {
         })
     }
 }
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const houseQRPath = path.join(__dirname, '../../../skripsi-homeline-frontend/public/qris');
 
@@ -844,12 +841,3 @@ export const approveInputHasilDesign = async (req, res) => {
         });
     }
 };
-
-//handle surveyor
-
-//handle designer
-
-
-//handle certificate
-
-//handle facility
