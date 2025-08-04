@@ -5,6 +5,8 @@ import {
     getHouse,
     getHouseByUserIdPending,
     getHouseByUserId3dOffer,
+    postApprove3dOfferingStatus,
+    postReject3dOfferingStatus,
     getHouseByUserIdWaitingPayment,
     getHouseByUserIdProcessing,
     getHouseByUserIdApproved,
@@ -29,6 +31,8 @@ router.get('/search/detail/model/:id', getSearchHouseModel)
 
 router.get('/advertisement/pending', getHouseByUserIdPending)
 router.get('/advertisement/3d-offering', getHouseByUserId3dOffer)
+router.patch('/advertisement/approve-3d-offering/:id', postApprove3dOfferingStatus)
+router.patch('/advertisement/reject-3d-offering/:id', postReject3dOfferingStatus)
 router.get('/advertisement/waiting-payment', getHouseByUserIdWaitingPayment)
 router.get('/advertisement/processing', getHouseByUserIdProcessing)
 router.get('/advertisement/approved', getHouseByUserIdApproved)

@@ -1,11 +1,6 @@
 import { Op } from "sequelize";
 import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests } from "../models/index.model.js";
-import path from "path";
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+import { uploadToS3 } from "../utils/uploadS3.js";
 
 export const getListHouse = async (req, res) => {
     try {
@@ -221,8 +216,6 @@ export const getListHouseInput = async (req, res) => {
     }
 }
 
-const houseModelPath = path.join(__dirname, '../../../skripsi-homeline-frontend/public/models');
-
 export const postInputHouseModel = async (req, res) => {
     try {
         const { house_id } = req.body;
@@ -245,14 +238,15 @@ export const postInputHouseModel = async (req, res) => {
         }
 
         const fileName = `design_${Date.now()}_${designFile.name}`;
-        const uploadPath = path.join(houseModelPath, fileName);
+        const fileBuffer = designFile.data;
+        const mimetype = designFile.mimetype;
 
-        await designFile.mv(uploadPath);
+        const fileUrl = await uploadToS3(fileBuffer, fileName, mimetype);
 
         await HouseDesigns.create({
             house_id: house_id,
             user_id: user.id,
-            design_file: fileName
+            design_file: fileUrl
         });
 
         await HouseProcesses.update(
@@ -263,7 +257,7 @@ export const postInputHouseModel = async (req, res) => {
                 where: {
                     house_id: house_id
                 }
-            },
+            }
         );
 
         return res.status(201).json({ message: "File desain berhasil diinput!" });

@@ -1,7 +1,7 @@
-import { DataTypes } from "sequelize";
+import { Sequelize } from "sequelize";
 import db from "../config/database.js";
-import Houses from "./houses.model.js";
-import Users from "./user.model.js";
+
+const { DataTypes } = Sequelize;
 
 const DesignRequests = db.define("design_requests", {
     id: {

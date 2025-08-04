@@ -1,7 +1,7 @@
 import { Sequelize } from "sequelize";
 import db from "../config/database.js";
 
-const {DataTypes} = Sequelize;
+const { DataTypes } = Sequelize;
 
 const LevelUsers = db.define('level_users', {
     id: {

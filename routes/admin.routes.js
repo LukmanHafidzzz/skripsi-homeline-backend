@@ -49,10 +49,10 @@ router.patch('/request/approve-design-request/:id', approveRequestDesign);
 
 router.get('/survey/house-list', getSurveyListHouse);
 router.get('/survey/survey-input', getSurveyHasilInput);
-router.patch('/request/survey-input/:id', approveInputHasilSurvey);
+router.patch('/survey/survey-input/:id', approveInputHasilSurvey);
 
 router.get('/design/house-list', getDesignListHouse);
 router.get('/design/design-input', getDesignHasilInput);
-router.patch('/request/design-input/:id', approveInputHasilDesign);
+router.patch('/design/design-input/:id', approveInputHasilDesign);
 
 export default router;

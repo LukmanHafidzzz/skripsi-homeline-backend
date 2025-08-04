@@ -1,9 +1,7 @@
 import { Op } from "sequelize";
 import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities } from "../models/index.model.js";
 import argon2 from "argon2";
-import path from "path";
-import { fileURLToPath } from 'url';
-import fs from "fs"
+import { uploadToS3 } from "../utils/uploadS3.js";
 
 export const updateUser = async (req, res) => {
     const response = await Users.findOne({
@@ -133,6 +131,68 @@ export const getHouseByUserId3dOffer = async (req, res) => {
         res.status(200).json(houses);
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+export const postApprove3dOfferingStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const houses = await Houses.findOne({
+            where: { id },
+        });
+
+        if (!houses) {
+            return res.status(404).json({
+                message: "Rumah tidak ditemukan"
+            });
+        }
+
+        houses.use_3d = "yes";
+        houses.status = "Waiting Payment";
+        await houses.save();
+
+        res.status(200).json({
+            message: "Status berhasil diperbarui",
+            houses
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+export const postReject3dOfferingStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const house = await Houses.findOne({
+            where: { id },
+        });
+
+        if (!house) {
+            return res.status(404).json({
+                message: "Rumah tidak ditemukan"
+            });
+        }
+
+        house.status = "Processing";
+        await house.save();
+
+        await HouseProcesses.create({
+            house_id: house.id,
+            survey_process: "Perlu Survey"
+        });
+
+        res.status(200).json({
+            message: "Status rumah berhasil diperbarui",
+            house
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
     }
 };
 
@@ -391,22 +451,12 @@ export const getHouseModelAdvertisement = async (req, res) => {
     }
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const housePhotosPath = path.join(__dirname, '../../../skripsi-homeline-frontend/public/housephotos');
-const certificateFilesPath = path.join(__dirname, '../../../skripsi-homeline-frontend/public/certificateFile');
-
 export const addHouse = async (req, res) => {
     try {
         const user = await Users.findOne({
-            where: {
-                uuid: req.session.userId,
-            },
+            where: { uuid: req.session.userId },
         });
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
+        if (!user) return res.status(404).json({ message: "User not found." });
 
         const {
             title,
@@ -425,25 +475,16 @@ export const addHouse = async (req, res) => {
             facilities: facilitiesString
         } = req.body;
 
-        if (!title || !building_area || !land_area || !price || !no_telp || !description || !link_maps) {
+        if (!title || !building_area || !land_area || !price || !no_telp || !description || !link_maps ||
+            !province || !city || !subdistrict || !village || !full_address || !certificate_type_id) {
             return res.status(400).json({ message: 'Missing required fields' });
-        }
-
-        if (!province || !city || !subdistrict || !village || !full_address) {
-            return res.status(400).json({ message: 'Missing address fields' });
-        }
-
-        if (!certificate_type_id) {
-            return res.status(400).json({ message: 'Certificate type is required' });
         }
 
         let facilities = [];
         if (facilitiesString) {
             try {
                 facilities = JSON.parse(facilitiesString);
-                if (!Array.isArray(facilities)) {
-                    facilities = [];
-                }
+                if (!Array.isArray(facilities)) facilities = [];
             } catch (parseError) {
                 console.error('Error parsing facilities:', parseError);
                 facilities = [];
@@ -472,43 +513,31 @@ export const addHouse = async (req, res) => {
 
         if (req.files && req.files.photos) {
             const photoFiles = Array.isArray(req.files.photos) ? req.files.photos : [req.files.photos];
-
             for (const photo of photoFiles) {
-                const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${photo.name}`;
-                const savePath = path.join(housePhotosPath, fileName);
-
-                if (!fs.existsSync(housePhotosPath)) {
-                    fs.mkdirSync(housePhotosPath, { recursive: true });
-                }
-
-                await photo.mv(savePath);
+                const fileName = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${photo.name}`;
+                const photoUrl = await uploadToS3(photo.data, fileName, photo.mimetype);
 
                 await HousePhotos.create({
                     house_id: house.id,
-                    photo: fileName
+                    photo: photoUrl
                 });
             }
         }
 
         if (req.files && req.files.certificate) {
             const certFile = req.files.certificate;
-            const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${certFile.name}`;
-            const savePath = path.join(certificateFilesPath, fileName);
-
-            if (!fs.existsSync(certificateFilesPath)) {
-                fs.mkdirSync(certificateFilesPath, { recursive: true });
-            }
-
-            await certFile.mv(savePath);
+            const fileName = `certificates/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${certFile.name}`;
+            const certUrl = await uploadToS3(certFile.data, fileName, certFile.mimetype);
 
             await Certificates.create({
                 house_id: house.id,
-                certificate_file: fileName,
+                certificate_file: certUrl,
                 certificate_type_id: parseInt(certificate_type_id)
             });
         }
 
-        if (facilities && facilities.length > 0) {
+        // Insert facilities
+        if (facilities.length > 0) {
             for (const facility of facilities) {
                 if (facility.facility_id && facility.quantity && facility.quantity > 0) {
                     await HouseFacilities.create({
@@ -527,8 +556,6 @@ export const addHouse = async (req, res) => {
 
     } catch (err) {
         console.error('Full error:', err);
-        console.error('Error stack:', err.stack);
-
         return res.status(500).json({
             message: 'Internal Server Error',
             error: process.env.NODE_ENV === 'development' ? {

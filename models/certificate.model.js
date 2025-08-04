@@ -22,7 +22,7 @@ const Certificates = db.define('certificates', {
         },
     },
     certificate_type_id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         allowNull: false,
         validate: {
             notEmpty: true,

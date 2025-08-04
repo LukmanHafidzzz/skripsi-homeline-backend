@@ -1,10 +1,7 @@
 import { Op } from "sequelize";
 import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests } from "../models/index.model.js";
-import path from "path";
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { uploadToS3 } from "../utils/uploadS3.js";
 
 export const getListHouse = async (req, res) => {
     try {
@@ -190,8 +187,6 @@ export const getListHouseInput = async (req, res) => {
     }
 }
 
-const surveyInputPath = path.join(__dirname, '../../../skripsi-homeline-frontend/public/surveyFile');
-
 export const postInputHouseSurvey = async (req, res) => {
     try {
         const { house_id, photo_video_link } = req.body;
@@ -217,16 +212,14 @@ export const postInputHouseSurvey = async (req, res) => {
             return res.status(404).json({ message: "User tidak ditemukan" });
         }
 
-        const fileName = `survey_${Date.now()}_${surveyFile.name}`;
-        const uploadPath = path.join(surveyInputPath, fileName);
-
-        await surveyFile.mv(uploadPath);
+        const fileName = `surveys/survey_${Date.now()}_${surveyFile.name}`;
+        const fileUrl = await uploadToS3(surveyFile.data, fileName, surveyFile.mimetype);
 
         await HouseSurveys.create({
             house_id: house_id,
             user_id: user.id,
             photo_video_link: photo_video_link,
-            notes_file: fileName,
+            notes_file: fileUrl,
         });
 
         await HouseProcesses.update(
@@ -237,13 +230,13 @@ export const postInputHouseSurvey = async (req, res) => {
                 where: {
                     house_id: house_id
                 }
-            },
+            }
         );
 
-        return res.status(201).json({ message: "File desain berhasil diinput!" });
+        return res.status(201).json({ message: "File catatan survei berhasil diinput!" });
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Terjadi kesalahan saat mengunggah file" });
     }
-}
+};

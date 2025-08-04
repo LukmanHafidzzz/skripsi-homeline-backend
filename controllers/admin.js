@@ -1,11 +1,7 @@
 import { Op } from "sequelize";
 import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests } from "../models/index.model.js";
 import argon2 from "argon2";
-import path from "path";
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { uploadToS3 } from "../utils/uploadS3.js";
 
 export const getUsers = async (req, res) => {
     try {
@@ -336,8 +332,6 @@ export const getHouseInputQr = async (req, res) => {
     }
 }
 
-const houseQRPath = path.join(__dirname, '../../../skripsi-homeline-frontend/public/qris');
-
 export const postHouseInputQr = async (req, res) => {
     try {
         const { house_id } = req.body;
@@ -348,21 +342,22 @@ export const postHouseInputQr = async (req, res) => {
         }
 
         const fileName = `qr_${Date.now()}.png`;
-        const uploadPath = path.join(houseQRPath, fileName);
+        const fileBuffer = qr.data;
+        const mimetype = qr.mimetype;
 
-        await qr.mv(uploadPath);
+        const fileUrl = await uploadToS3(fileBuffer, fileName, mimetype);
 
         const newPayment = await Payments.create({
             house_id,
-            qr: fileName,
+            qr: fileUrl,
         });
 
-        res.status(201).json({ message: "QR created successfully", data: newPayment });
+        res.status(201).json({ message: "QR uploaded successfully", data: newPayment });
     } catch (err) {
-        console.error("Error in cukimay:", err);
+        console.error("Error uploading to S3:", err);
         res.status(500).json({ error: "Internal server error" });
     }
-}
+};
 
 export const getHouseStatus3dYes = async (req, res) => {
     try {
