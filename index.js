@@ -68,7 +68,6 @@ app.use(
 );
 
 
-app.use(express.json());
 app.use(fileUpload({
     createParentPath: true,
     limits: {
@@ -77,6 +76,8 @@ app.use(fileUpload({
     abortOnLimit: true,
     responseOnLimit: "File size limit has been reached",
 }));
+
+app.use(express.json());
 
 app.use((req, res, next) => {
     console.log(`[${req.method}] ${req.originalUrl}`);
