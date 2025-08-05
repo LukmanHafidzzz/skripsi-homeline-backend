@@ -71,7 +71,7 @@ app.use(
 app.use(fileUpload({
     createParentPath: true,
     limits: {
-        fileSize: 20 * 1024 * 1024
+        fileSize: 50 * 1024 * 1024
     },
     abortOnLimit: true,
     responseOnLimit: "File size limit has been reached",
@@ -90,6 +90,13 @@ app.use("/api/designer", DesignerRoute);
 app.use("/api/admin/level-users", LevelUserRoute);
 app.use("/api/auth", AuthRoute);
 app.use("/api/user", UserRoute);
+
+app.use((err, req, res, next) => {
+    if (err.status === 413) {
+        return res.status(413).json({ message: "Ukuran file terlalu besar" });
+    }
+    next(err);
+});
 
 // store.sync();
 

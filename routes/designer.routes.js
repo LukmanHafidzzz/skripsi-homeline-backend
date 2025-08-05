@@ -19,5 +19,4 @@ router.post('/make-request', postMakeRequest);
 router.get('/result-input', getListHouseInput);
 router.post('/input-house-model', postInputHouseModel);
 
-
 export default router;
