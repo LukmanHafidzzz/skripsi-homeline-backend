@@ -22,6 +22,9 @@ import {
 
 const router = express.Router();
 
+router.get("/", (req, res) => {
+    res.send("User route root is working");
+});
 router.patch('/:id', updateUser);
 router.get('/certificate-types', getCertificateTypes)
 router.get('/house', getHouse)
