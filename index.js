@@ -33,7 +33,8 @@ app.use(
         saveUninitialized: true,
         store: store,
         cookie: {
-            secure: "auto",
+            secure: false,
+            sameSite: "lax",
         },
     })
 );
@@ -41,7 +42,7 @@ app.use(
 app.use(
     cors({
         credentials: true,
-        origin: true,
+        origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     })
 );
 
