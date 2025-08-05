@@ -48,7 +48,6 @@ export const login = async (req, res) => {
     console.log('Setting session userId:', response.uuid);
     console.log('Session ID after login:', req.sessionID);
 
-    // Save session explicitly
     req.session.save((err) => {
         if (err) {
             console.error('Session save error:', err);
@@ -73,17 +72,7 @@ export const login = async (req, res) => {
 
 export const me = async (req, res) => {
     try {
-        console.log('\n👤 === /ME ENDPOINT ===');
-        console.log('🆔 Session ID:', req.sessionID);
-        console.log('👤 Session userId:', req.session?.userId);
-        console.log('📋 Full session object:', req.session);
-        console.log('🍪 Cookie header:', req.headers.cookie);
-        console.log('🌍 Origin:', req.headers.origin);
-        console.log('🔧 User-Agent:', req.headers['user-agent']?.substring(0, 50) + '...');
-
         if (!req.session || !req.session.userId) {
-            console.log('❌ No session or userId found');
-            console.log('===================\n');
             return res.status(401).json({
                 message: "Mohon login ke akun anda",
                 debug: {
@@ -108,20 +97,12 @@ export const me = async (req, res) => {
         });
 
         if (!response) {
-            console.log('❌ User not found in database');
-            console.log('===================\n');
             return res.status(404).json({
                 message: "User tidak ditemukan"
             });
         }
-
-        console.log('✅ User found:', response.username);
-        console.log('===================\n');
-
         res.status(200).json(response);
-
     } catch (error) {
-        console.error('❌ Error in /me:', error);
         return res.status(500).json({
             message: "Server error"
         });

@@ -27,22 +27,17 @@ const store = new sessionStore({
 
 const allowedOrigins = [
     'http://localhost:5173',
-    'http://localhost:3000',
-    process.env.FRONTEND_URL // tambahkan untuk production nanti
+    process.env.FRONTEND_URL
 ].filter(Boolean);
 
 app.use(
     cors({
         credentials: true,
         origin: function (origin, callback) {
-            // Allow requests with no origin (Postman, mobile apps)
             if (!origin) return callback(null, true);
-
-            // Check allowed origins or env variable
             if (allowedOrigins.includes(origin) || origin === process.env.CORS_ORIGIN) {
                 return callback(null, true);
             } else {
-                console.log('❌ Blocked origin:', origin);
                 return callback(new Error('Not allowed by CORS'));
             }
         },
@@ -51,6 +46,7 @@ app.use(
         exposedHeaders: ['Set-Cookie']
     })
 );
+
 // (async() => {
 //     await db.sync();
 // })();
@@ -59,15 +55,14 @@ app.use(
     session({
         secret: process.env.SESSION_SECRET,
         resave: false,
-        saveUninitialized: false, // ubah ke false untuk security
+        saveUninitialized: false,
         store: store,
-        name: 'connect.sid', // nama session cookie
+        name: 'connect.sid',
         cookie: {
-            secure: process.env.NODE_ENV === 'production', // HTTPS only di production
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' untuk cross-origin
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000, // 24 jam
-            // domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined
+            maxAge: 24 * 60 * 60 * 1000,
         },
     })
 );
@@ -100,6 +95,4 @@ app.use("/api/user", UserRoute);
 const PORT = process.env.APP_PORT
 app.listen(PORT, () => {
     console.log(`🚀 Server running on PORT ${PORT}`);
-    console.log('🌍 Environment:', process.env.NODE_ENV);
-    console.log('🔗 CORS Origin:', process.env.CORS_ORIGIN);
 });
