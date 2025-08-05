@@ -22,30 +22,15 @@ const store = new sessionStore({
     db: db,
 });
 
-// (async() => {
-//     await db.sync();
-// })();
-
-const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    // Tambahkan domain frontend production Anda nanti
-];
-
 app.use(
     cors({
         credentials: true,
-        origin: function (origin, callback) {
-            if (!origin) return callback(null, true);
-
-            if (allowedOrigins.indexOf(origin) !== -1 || process.env.CORS_ORIGIN) {
-                return callback(null, true);
-            } else {
-                return callback(new Error('Not allowed by CORS'));
-            }
-        },
+        origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     })
 );
+// (async() => {
+//     await db.sync();
+// })();
 
 app.use(
     session({
@@ -54,10 +39,8 @@ app.use(
         saveUninitialized: true,
         store: store,
         cookie: {
-            secure: process.env.NODE_ENV === 'production', // true untuk HTTPS
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' untuk cross-origin
-            httpOnly: true, // tambahkan untuk keamanan
-            maxAge: 24 * 60 * 60 * 1000 // 24 jam
+            secure: false,
+            sameSite: "lax",
         },
     })
 );

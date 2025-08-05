@@ -72,7 +72,12 @@ export const login = async (req, res) => {
 };
 
 export const me = async (req, res) => {
-    console.log('Session userId in /me:', req.session?.userId);
+    console.log('=== /me endpoint ===');
+    console.log('Session ID:', req.sessionID);
+    console.log('Session userId:', req.session?.userId);
+    console.log('Session object:', req.session);
+    console.log('Headers cookie:', req.headers.cookie);
+    console.log('===================');
     if (!req.session.userId) {
         return res.status(401).json({
             message: "Mohon login ke akun anda"
