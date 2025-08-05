@@ -16,16 +16,39 @@ dotenv.config();
 
 const app = express();
 
-const sessionStore = SequelizeStore(session.Store);
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
 
+const sessionStore = SequelizeStore(session.Store);
 const store = new sessionStore({
     db: db,
 });
 
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    process.env.FRONTEND_URL // tambahkan untuk production nanti
+].filter(Boolean);
+
 app.use(
     cors({
         credentials: true,
-        origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+        origin: function (origin, callback) {
+            // Allow requests with no origin (Postman, mobile apps)
+            if (!origin) return callback(null, true);
+
+            // Check allowed origins or env variable
+            if (allowedOrigins.includes(origin) || origin === process.env.CORS_ORIGIN) {
+                return callback(null, true);
+            } else {
+                console.log('❌ Blocked origin:', origin);
+                return callback(new Error('Not allowed by CORS'));
+            }
+        },
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+        exposedHeaders: ['Set-Cookie']
     })
 );
 // (async() => {
@@ -36,11 +59,15 @@ app.use(
     session({
         secret: process.env.SESSION_SECRET,
         resave: false,
-        saveUninitialized: true,
+        saveUninitialized: false, // ubah ke false untuk security
         store: store,
+        name: 'connect.sid', // nama session cookie
         cookie: {
-            secure: false,
-            sameSite: "lax",
+            secure: process.env.NODE_ENV === 'production', // HTTPS only di production
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' untuk cross-origin
+            httpOnly: true,
+            maxAge: 24 * 60 * 60 * 1000, // 24 jam
+            // domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined
         },
     })
 );
@@ -70,6 +97,9 @@ app.use("/api/user", UserRoute);
 
 // store.sync();
 
-app.listen(process.env.APP_PORT, () => {
-    console.log(`The server app running on PORT...`);
+const PORT = process.env.APP_PORT
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on PORT ${PORT}`);
+    console.log('🌍 Environment:', process.env.NODE_ENV);
+    console.log('🔗 CORS Origin:', process.env.CORS_ORIGIN);
 });
