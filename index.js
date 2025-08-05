@@ -27,6 +27,12 @@ const store = new sessionStore({
 // })();
 
 app.use(
+    cors({
+        credentials: true,
+        origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    })
+);
+app.use(
     session({
         secret: process.env.SESSION_SECRET,
         resave: false,
@@ -39,12 +45,6 @@ app.use(
     })
 );
 
-app.use(
-    cors({
-        credentials: true,
-        origin: process.env.CORS_ORIGIN || "http://localhost:5173",
-    })
-);
 
 app.use(express.json());
 app.use(fileUpload({
