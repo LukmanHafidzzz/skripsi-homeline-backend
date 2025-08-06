@@ -1,5 +1,3 @@
-import { uploadToS3 } from "../utils/uploadS3.js";
-
 export const handleUpload = async (req, res) => {
     try {
         const chunks = [];
