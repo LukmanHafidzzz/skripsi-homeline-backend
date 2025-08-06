@@ -331,10 +331,6 @@ export const getPresignedUrlForDesign = async (req, res) => {
 
 export const saveDesignFileInfo = async (req, res) => {
     try {
-        console.log("SaveDesignFileInfo dipanggil");
-        console.log("Data body:", req.body);
-        console.log("Session userId:", req.session.userId);
-
         const { house_id, fileUrl, fileName } = req.body;
 
         if (!house_id || !fileUrl || !fileName) {
@@ -359,13 +355,11 @@ export const saveDesignFileInfo = async (req, res) => {
             });
         }
 
-        const newDesign = await HouseDesigns.create({
+        await HouseDesigns.create({
             house_id: house_id,
             user_id: user.id,
             design_file: fileUrl
         });
-
-        console.log("Berhasil menyimpan HouseDesigns:", newDesign);
 
         await HouseProcesses.update(
             {
