@@ -195,34 +195,12 @@ export const postMakeRequest = async (req, res) => {
     }
 };
 
-export const getListHouseInput = async (req, res) => {
-    try {
-        const house_processes = await HouseProcesses.findAll({
-            where: {
-                design_process: "Sedang Desain"
-            },
-            include: {
-                model: Houses,
-                include: {
-                    model: Address,
-                }
-            }
-        })
-        res.status(200).json(house_processes);
-    } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        })
-    }
-}
-
 export const postInputHouseModel = async (req, res) => {
     try {
-        const { house_id } = req.body;
-        const designFile = req.files?.design_file;
+        const { house_id, design_file_url } = req.body;
 
-        if (!designFile) {
-            return res.status(400).json({ message: "File tidak ditemukan" });
+        if (!design_file_url) {
+            return res.status(400).json({ message: "URL file tidak ditemukan" });
         }
 
         if (!req.session.userId) {
@@ -237,16 +215,10 @@ export const postInputHouseModel = async (req, res) => {
             return res.status(404).json({ message: "User tidak ditemukan" });
         }
 
-        const fileName = `design_${Date.now()}_${designFile.name}`;
-        const fileBuffer = designFile.data;
-        const mimetype = designFile.mimetype;
-
-        const fileUrl = await uploadToS3(fileBuffer, fileName, mimetype);
-
         await HouseDesigns.create({
             house_id: house_id,
             user_id: user.id,
-            design_file: fileUrl
+            design_file: design_file_url
         });
 
         await HouseProcesses.update(
@@ -264,6 +236,6 @@ export const postInputHouseModel = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Terjadi kesalahan saat mengunggah file" });
+        res.status(500).json({ message: "Terjadi kesalahan saat menyimpan data" });
     }
-}
+};

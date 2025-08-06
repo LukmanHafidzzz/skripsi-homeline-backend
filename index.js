@@ -83,6 +83,7 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use('/api', UploadRoute);
 app.use("/api/admin", AdminRoute);
 app.use("/api/surveyor", SurveyorRoute);
 app.use("/api/designer", DesignerRoute);
