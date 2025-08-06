@@ -270,11 +270,20 @@ export const postInputHouseModel = async (req, res) => {
 
 export const getPresignedUrlForDesign = async (req, res) => {
     try {
+        // Debug logging
+        console.log('Request body:', req.body);
+        console.log('Request headers:', req.headers);
+
         const { fileName, contentType } = req.body;
 
+        console.log('Extracted fileName:', fileName);
+        console.log('Extracted contentType:', contentType);
+
         if (!fileName || !contentType) {
+            console.log('Missing required fields - fileName:', !!fileName, 'contentType:', !!contentType);
             return res.status(400).json({
-                message: "fileName dan contentType diperlukan"
+                message: "fileName dan contentType diperlukan",
+                received: { fileName, contentType }
             });
         }
 
@@ -295,12 +304,15 @@ export const getPresignedUrlForDesign = async (req, res) => {
         }
 
         const uniqueFileName = `design_${Date.now()}_${fileName}`;
+        console.log('Generated unique filename:', uniqueFileName);
 
         const { presignedUrl, fileUrl } = await generatePresignedUrl(
             uniqueFileName,
             contentType,
             3600
         );
+
+        console.log('Generated URLs:', { presignedUrl, fileUrl });
 
         return res.status(200).json({
             presignedUrl,
@@ -309,9 +321,10 @@ export const getPresignedUrlForDesign = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error('Error in getPresignedUrlForDesign:', error);
         res.status(500).json({
-            message: "Terjadi kesalahan saat membuat presigned URL"
+            message: "Terjadi kesalahan saat membuat presigned URL",
+            error: error.message
         });
     }
 };
