@@ -26,27 +26,34 @@ const store = new sessionStore({
     db: db,
 });
 
-const allowedOrigins = [
-    'http://localhost:5173',
-    process.env.FRONTEND_URL
-].filter(Boolean);
+app.use((req, res, next) => {
+    console.log(`[${req.method}] ${req.originalUrl} from ${req.headers.origin}`);
+    next();
+});
 
-app.use(
-    cors({
-        credentials: true,
-        origin: function (origin, callback) {
-            if (!origin) return callback(null, true);
-            if (allowedOrigins.includes(origin) || origin === process.env.CORS_ORIGIN) {
-                return callback(null, true);
-            } else {
-                return callback(new Error('Not allowed by CORS'));
-            }
-        },
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-filename'],
-        exposedHeaders: ['Set-Cookie']
-    })
-);
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+        'http://localhost:5173',
+        process.env.FRONTEND_URL,
+        process.env.CORS_ORIGIN
+    ].filter(Boolean);
+
+    if (allowedOrigins.includes(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);
+    }
+
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, x-filename");
+    res.header("Access-Control-Expose-Headers", "Set-Cookie");
+
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(200);
+    }
+
+    next();
+});
 
 // (async() => {
 //     await db.sync();
@@ -68,16 +75,16 @@ app.use(
     })
 );
 
+app.use(express.json());
+
 app.use(fileUpload({
     createParentPath: true,
     limits: {
-        fileSize: 20 * 1024 * 1024
+        fileSize: 50 * 1024 * 1024 // 20 MB
     },
     abortOnLimit: true,
     responseOnLimit: "File size limit has been reached",
-}));
-
-app.use(express.json());
+})); 1
 
 app.use((req, res, next) => {
     console.log(`[${req.method}] ${req.originalUrl}`);
