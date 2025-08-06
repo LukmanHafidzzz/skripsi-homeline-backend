@@ -218,10 +218,11 @@ export const getListHouseInput = async (req, res) => {
 
 export const postInputHouseModel = async (req, res) => {
     try {
-        const { house_id, design_file } = req.body;
+        const { house_id } = req.body;
+        const designFile = req.files?.design_file;
 
-        if (!design_file) {
-            return res.status(400).json({ message: "URL file tidak ditemukan" });
+        if (!designFile) {
+            return res.status(400).json({ message: "File tidak ditemukan" });
         }
 
         if (!req.session.userId) {
@@ -236,20 +237,33 @@ export const postInputHouseModel = async (req, res) => {
             return res.status(404).json({ message: "User tidak ditemukan" });
         }
 
+        const fileName = `design_${Date.now()}_${designFile.name}`;
+        const fileBuffer = designFile.data;
+        const mimetype = designFile.mimetype;
+
+        const fileUrl = await uploadToS3(fileBuffer, fileName, mimetype);
+
         await HouseDesigns.create({
-            house_id,
+            house_id: house_id,
             user_id: user.id,
-            design_file
+            design_file: fileUrl
         });
 
         await HouseProcesses.update(
-            { design_process: "Pengecekan Hasil" },
-            { where: { house_id } }
+            {
+                design_process: "Pengecekan Hasil"
+            },
+            {
+                where: {
+                    house_id: house_id
+                }
+            }
         );
 
         return res.status(201).json({ message: "File desain berhasil diinput!" });
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Terjadi kesalahan saat menyimpan metadata file" });
+        res.status(500).json({ message: "Terjadi kesalahan saat mengunggah file" });
     }
-};
+}
