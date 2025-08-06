@@ -27,7 +27,9 @@ const store = new sessionStore({
 
 const allowedOrigins = [
     'http://localhost:5173',
-    process.env.FRONTEND_URL
+    'https://skripsi-homeline-frontend.vercel.app',
+    process.env.FRONTEND_URL,
+    process.env.CORS_ORIGIN
 ].filter(Boolean);
 
 app.use(
@@ -62,11 +64,12 @@ app.use(
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000,
-        },
+            maxAge: 24 * 60 * 60 * 1000
+        }
     })
 );
 
+app.use(express.json());
 app.use(fileUpload({
     createParentPath: true,
     limits: {
@@ -75,7 +78,6 @@ app.use(fileUpload({
     abortOnLimit: true,
     responseOnLimit: "File size limit has been reached",
 }));
-app.use(express.json());
 
 
 app.use((req, res, next) => {
