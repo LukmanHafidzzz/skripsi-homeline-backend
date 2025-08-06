@@ -1,19 +1,17 @@
 export const handleUpload = async (req, res) => {
     try {
-        const chunks = [];
-        req.on("data", chunk => chunks.push(chunk));
-        req.on("end", async () => {
-            const buffer = Buffer.concat(chunks);
-            const fileName = req.headers["x-filename"];
-            const contentType = req.headers["content-type"];
+        const file = req.files?.file;
 
-            if (!fileName || !contentType) {
-                return res.status(400).json({ error: "Missing filename or content-type" });
-            }
+        if (!file) {
+            return res.status(400).json({ error: "No file uploaded" });
+        }
 
-            const url = await uploadToS3(buffer, fileName, contentType);
-            res.status(200).json({ url });
-        });
+        const buffer = file.data;
+        const fileName = file.name;
+        const contentType = file.mimetype;
+
+        const url = await uploadToS3(buffer, fileName, contentType);
+        res.status(200).json({ url });
     } catch (error) {
         console.error("Upload error:", error);
         res.status(500).json({ error: "Upload failed" });

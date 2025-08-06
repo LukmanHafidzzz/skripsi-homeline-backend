@@ -34,6 +34,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     const allowedOrigins = [
+        'https://skripsi-homeline-frontend.vercel.app',
         'http://localhost:5173',
         process.env.FRONTEND_URL,
         process.env.CORS_ORIGIN
