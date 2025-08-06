@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -24,4 +25,21 @@ export const uploadToS3 = async (fileBuffer, fileName, mimetype) => {
     await s3.send(command);
 
     return `https://${process.env.ENDPOINT}/${process.env.BUCKET}/${fileName}`;
+};
+
+export const generatePresignedUrl = async (fileName, contentType, expiresIn = 3600) => {
+    const params = {
+        Bucket: process.env.BUCKET,
+        Key: fileName,
+        ContentType: contentType,
+        ACL: "public-read",
+    };
+
+    const command = new PutObjectCommand(params);
+    const presignedUrl = await getSignedUrl(s3, command, { expiresIn });
+
+    return {
+        presignedUrl,
+        fileUrl: `https://${process.env.ENDPOINT}/${process.env.BUCKET}/${fileName}`
+    };
 };

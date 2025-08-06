@@ -1,6 +1,6 @@
 import { Op } from "sequelize";
 import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests } from "../models/index.model.js";
-import { uploadToS3 } from "../utils/uploadS3.js";
+import { generatePresignedUrl } from "../utils/uploadS3.js";
 
 export const getListHouse = async (req, res) => {
     try {
@@ -218,10 +218,11 @@ export const getListHouseInput = async (req, res) => {
 
 export const postInputHouseModel = async (req, res) => {
     try {
-        const { house_id, design_file_url } = req.body;
+        const { house_id } = req.body;
+        const designFile = req.files?.design_file;
 
-        if (!design_file_url) {
-            return res.status(400).json({ message: "URL file tidak ditemukan" });
+        if (!designFile) {
+            return res.status(400).json({ message: "File tidak ditemukan" });
         }
 
         if (!req.session.userId) {
@@ -236,10 +237,16 @@ export const postInputHouseModel = async (req, res) => {
             return res.status(404).json({ message: "User tidak ditemukan" });
         }
 
+        const fileName = `design_${Date.now()}_${designFile.name}`;
+        const fileBuffer = designFile.data;
+        const mimetype = designFile.mimetype;
+
+        const fileUrl = await uploadToS3(fileBuffer, fileName, mimetype);
+
         await HouseDesigns.create({
             house_id: house_id,
             user_id: user.id,
-            design_file: design_file_url
+            design_file: fileUrl
         });
 
         await HouseProcesses.update(
@@ -257,6 +264,109 @@ export const postInputHouseModel = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Terjadi kesalahan saat menyimpan data" });
+        res.status(500).json({ message: "Terjadi kesalahan saat mengunggah file" });
+    }
+}
+
+export const getPresignedUrlForDesign = async (req, res) => {
+    try {
+        const { fileName, contentType } = req.body;
+
+        if (!fileName || !contentType) {
+            return res.status(400).json({
+                message: "fileName dan contentType diperlukan"
+            });
+        }
+
+        if (!req.session.userId) {
+            return res.status(401).json({
+                message: "Mohon login terlebih dahulu"
+            });
+        }
+
+        const user = await Users.findOne({
+            where: { uuid: req.session.userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User tidak ditemukan"
+            });
+        }
+
+        const uniqueFileName = `design_${Date.now()}_${fileName}`;
+
+        const { presignedUrl, fileUrl } = await generatePresignedUrl(
+            uniqueFileName,
+            contentType,
+            3600
+        );
+
+        return res.status(200).json({
+            presignedUrl,
+            fileUrl,
+            fileName: uniqueFileName
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Terjadi kesalahan saat membuat presigned URL"
+        });
+    }
+};
+
+export const saveDesignFileInfo = async (req, res) => {
+    try {
+        const { house_id, fileUrl, fileName } = req.body;
+
+        if (!house_id || !fileUrl || !fileName) {
+            return res.status(400).json({
+                message: "house_id, fileUrl, dan fileName diperlukan"
+            });
+        }
+
+        if (!req.session.userId) {
+            return res.status(401).json({
+                message: "Mohon login terlebih dahulu"
+            });
+        }
+
+        const user = await Users.findOne({
+            where: { uuid: req.session.userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User tidak ditemukan"
+            });
+        }
+
+        await HouseDesigns.create({
+            house_id: house_id,
+            user_id: user.id,
+            design_file: fileUrl
+        });
+
+        await HouseProcesses.update(
+            {
+                design_process: "Pengecekan Hasil"
+            },
+            {
+                where: {
+                    house_id: house_id
+                }
+            }
+        );
+
+        return res.status(201).json({
+            message: "File desain berhasil disimpan!"
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Terjadi kesalahan saat menyimpan info file"
+        });
     }
 };
