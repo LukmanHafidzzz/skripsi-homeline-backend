@@ -195,6 +195,27 @@ export const postMakeRequest = async (req, res) => {
     }
 };
 
+export const getListHouseInput = async (req, res) => {
+    try {
+        const house_processes = await HouseProcesses.findAll({
+            where: {
+                design_process: "Sedang Desain"
+            },
+            include: {
+                model: Houses,
+                include: {
+                    model: Address,
+                }
+            }
+        })
+        res.status(200).json(house_processes);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        })
+    }
+}
+
 export const postInputHouseModel = async (req, res) => {
     try {
         const { house_id, design_file_url } = req.body;

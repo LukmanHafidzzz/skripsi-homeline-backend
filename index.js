@@ -10,6 +10,7 @@ import LevelUserRoute from "./routes/level.user.routes.js";
 import SurveyorRoute from './routes/surveyor.routes.js';
 import DesignerRoute from './routes/designer.routes.js';
 import AuthRoute from "./routes/auth.routes.js";
+import UploadRoute from './routes/upload.routes.js'
 import fileUpload from "express-fileupload";
 
 dotenv.config();
