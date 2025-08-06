@@ -10,6 +10,7 @@ import LevelUserRoute from "./routes/level.user.routes.js";
 import SurveyorRoute from './routes/surveyor.routes.js';
 import DesignerRoute from './routes/designer.routes.js';
 import AuthRoute from "./routes/auth.routes.js";
+import UploadRoute from './routes/upload.routes.js'
 import fileUpload from "express-fileupload";
 
 dotenv.config();
@@ -47,8 +48,6 @@ app.use(
     })
 );
 
-app.options('*', cors());
-
 // (async() => {
 //     await db.sync();
 // })();
@@ -69,24 +68,23 @@ app.use(
     })
 );
 
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
 app.use(fileUpload({
     createParentPath: true,
     limits: {
-        fileSize: 50 * 1024 * 1024
+        fileSize: 20 * 1024 * 1024
     },
     abortOnLimit: true,
     responseOnLimit: "File size limit has been reached",
 }));
+
+app.use(express.json());
 
 app.use((req, res, next) => {
     console.log(`[${req.method}] ${req.originalUrl}`);
     next();
 });
 
+app.use("/api/upload", UploadRoute);
 app.use("/api/admin", AdminRoute);
 app.use("/api/surveyor", SurveyorRoute);
 app.use("/api/designer", DesignerRoute);
