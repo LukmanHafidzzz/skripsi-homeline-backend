@@ -514,8 +514,12 @@ export const addHouse = async (req, res) => {
         if (req.files && req.files.photos) {
             const photoFiles = Array.isArray(req.files.photos) ? req.files.photos : [req.files.photos];
             for (const photo of photoFiles) {
-                const fileName = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${photo.name}`;
-                const photoUrl = await uploadToS3(photo.data, fileName, photo.mimetype);
+                const webpBuffer = await sharp(photo.data)
+                    .webp({ quality: 80 })
+                    .toBuffer();
+
+                const fileName = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`;
+                const photoUrl = await uploadToS3(webpBuffer, fileName, 'image/webp');
 
                 await HousePhotos.create({
                     house_id: house.id,
