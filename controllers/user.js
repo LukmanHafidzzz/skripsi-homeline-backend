@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities } from "../models/index.model.js";
 import argon2 from "argon2";
 import { uploadToS3 } from "../utils/uploadS3.js";
+import sharp from "sharp";
 
 export const updateUser = async (req, res) => {
     const response = await Users.findOne({
