@@ -27,47 +27,51 @@ export const register = async (req, res) => {
 }
 
 export const login = async (req, res) => {
-    const response = await Users.findOne({
-        where: {
-            email: req.body.email
+    try {
+        const response = await Users.findOne({
+            where: { email: req.body.email }
+        });
+
+        if (!response) {
+            return res.status(404).json({ message: "User tidak ditemukan" });
         }
-    });
-    if (!response) {
-        return res.status(404).json({
-            message: "User tidak ditemukan"
-        });
-    };
-    const match = await argon2.verify(response.password, req.body.password);
-    if (!match) {
-        return res.status(400).json({
-            message: "Password salah"
-        });
-    }
-    req.session.userId = response.uuid;
 
-    console.log('Setting session userId:', response.uuid);
-    console.log('Session ID after login:', req.sessionID);
+        const match = await argon2.verify(response.password, req.body.password);
+        if (!match) {
+            return res.status(400).json({ message: "Password salah" });
+        }
 
-    req.session.save((err) => {
-        if (err) {
-            console.error('Session save error:', err);
-        } else {
+        req.session.userId = response.uuid;
+
+        console.log('Setting session userId:', response.uuid);
+        console.log('Session ID after login:', req.sessionID);
+
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error:', err);
+                return res.status(500).json({ message: "Gagal menyimpan session" });
+            }
+
             console.log('Session saved successfully');
-        }
-    });
 
-    const uuid = response.uuid;
-    const name = response.username;
-    const email = response.email;
-    const level_status_id = response.level_status_id;
+            const uuid = response.uuid;
+            const name = response.username;
+            const email = response.email;
+            const level_status_id = response.level_status_id;
 
-    res.status(200).json({
-        uuid,
-        name,
-        email,
-        level_status_id,
-        message: "Login berhasil",
-    })
+            res.status(200).json({
+                uuid,
+                name,
+                email,
+                level_status_id,
+                message: "Login berhasil",
+            });
+        });
+
+    } catch (error) {
+        console.error('Login error:', error);
+        return res.status(500).json({ message: "Server error" });
+    }
 };
 
 export const me = async (req, res) => {
@@ -85,29 +89,20 @@ export const me = async (req, res) => {
         }
 
         const response = await Users.findOne({
-            attributes: [
-                'uuid',
-                'username',
-                'email',
-                'level_user_id',
-            ],
-            where: {
-                uuid: req.session.userId
-            }
+            attributes: ['uuid', 'username', 'email', 'level_user_id'],
+            where: { uuid: req.session.userId }
         });
 
         if (!response) {
-            return res.status(404).json({
-                message: "User tidak ditemukan"
-            });
+            return res.status(404).json({ message: "User tidak ditemukan" });
         }
+
         res.status(200).json(response);
     } catch (error) {
-        return res.status(500).json({
-            message: "Server error"
-        });
+        console.error('Me error:', error);
+        return res.status(500).json({ message: "Server error" });
     }
-}
+};
 
 export const logout = async (req, res) => {
     req.session.destroy((err) => {

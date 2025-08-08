@@ -512,6 +512,20 @@ export const addHouse = async (req, res) => {
             full_address
         });
 
+        // if (req.files && req.files.photos) {
+        //     const photoFiles = Array.isArray(req.files.photos) ? req.files.photos : [req.files.photos];
+        //     for (const photo of photoFiles) {
+        //         const fileName = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${photo.name}`;
+        //         const photoUrl = await uploadToS3(photo.data, fileName, photo.mimetype);
+
+        //         await HousePhotos.create({
+        //             house_id: house.id,
+        //             photo: photoUrl
+        //         });
+        //     }
+        // }
+
+
         if (req.files && req.files.photos) {
             const photoFiles = Array.isArray(req.files.photos) ? req.files.photos : [req.files.photos];
             for (const photo of photoFiles) {
@@ -528,6 +542,8 @@ export const addHouse = async (req, res) => {
                 });
             }
         }
+
+
 
         if (req.files && req.files.certificate) {
             const certFile = req.files.certificate;
