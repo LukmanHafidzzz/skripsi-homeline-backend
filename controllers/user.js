@@ -364,6 +364,41 @@ export const getHouseByUserDelete = async (req, res) => {
     }
 };
 
+export const deleteHouseByUser = async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({
+                message: "Mohon login ke akun anda"
+            });
+        }
+
+        const user = await Users.findOne({ where: { uuid: req.session.userId } });
+        if (!user) {
+            return res.status(404).json({ message: "User tidak ditemukan" });
+        }
+
+        const house = await Houses.findOne({
+            where: {
+                id: req.params.id,
+                user_id: user.id,
+                status: {
+                    [Op.in]: ['Approved', 'Rejected']
+                }
+            }
+        });
+
+        if (!house) {
+            return res.status(404).json({ message: "Iklan tidak ditemukan atau tidak dapat dihapus." });
+        }
+
+        await house.destroy();
+
+        res.status(200).json({ message: "Iklan berhasil dihapus." });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
 export const getHouseAdvertisementDetail = async (req, res) => {
     try {
         const { id } = req.params;
@@ -511,20 +546,6 @@ export const addHouse = async (req, res) => {
             village,
             full_address
         });
-
-        // if (req.files && req.files.photos) {
-        //     const photoFiles = Array.isArray(req.files.photos) ? req.files.photos : [req.files.photos];
-        //     for (const photo of photoFiles) {
-        //         const fileName = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${photo.name}`;
-        //         const photoUrl = await uploadToS3(photo.data, fileName, photo.mimetype);
-
-        //         await HousePhotos.create({
-        //             house_id: house.id,
-        //             photo: photoUrl
-        //         });
-        //     }
-        // }
-
 
         if (req.files && req.files.photos) {
             const photoFiles = Array.isArray(req.files.photos) ? req.files.photos : [req.files.photos];

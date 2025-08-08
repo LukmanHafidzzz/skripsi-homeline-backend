@@ -68,11 +68,9 @@ app.use(
     })
 );
 
-
 // (async() => {
 //     await db.sync();
 // })();
-
 
 app.use(fileUpload({
     createParentPath: true,

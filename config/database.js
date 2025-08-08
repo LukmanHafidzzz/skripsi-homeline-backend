@@ -3,11 +3,6 @@ import dotenv from "dotenv";
 import mysql2 from "mysql2";
 dotenv.config();
 
-// const db = new Sequelize('db_homeline', 'root', '', {
-//     host: 'localhost',
-//     dialect: 'mysql'
-// });
-
 const db = new Sequelize(
     process.env.DB_NAME,
     process.env.DB_USER,

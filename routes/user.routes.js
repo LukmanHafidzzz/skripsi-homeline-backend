@@ -12,6 +12,7 @@ import {
     getHouseByUserIdApproved,
     getHouseByUserIdRejected,
     getHouseByUserDelete,
+    deleteHouseByUser,
     getHouseAdvertisementDetail,
     getHouseModelAdvertisement,
     addHouse,
@@ -41,6 +42,7 @@ router.get('/advertisement/processing', getHouseByUserIdProcessing)
 router.get('/advertisement/approved', getHouseByUserIdApproved)
 router.get('/advertisement/rejected', getHouseByUserIdRejected)
 router.get('/advertisement/delete', getHouseByUserDelete)
+router.delete('/advertisement/delete/:id', deleteHouseByUser)
 
 router.get('/advertisement/detail/:id', getHouseAdvertisementDetail);
 router.get('/advertisement/detail/model/:id', getHouseModelAdvertisement);
