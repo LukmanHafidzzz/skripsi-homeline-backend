@@ -72,6 +72,17 @@ export const getHouse = async (req, res) => {
     }
 }
 
+export const getFacilitiy = async (req, res) => {
+    try {
+        const response = await Facilities.findAll();
+        res.status(200).json(response);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        });
+    }
+}
+
 // House Handle
 export const getHouseByUserIdPending = async (req, res) => {
     try {
