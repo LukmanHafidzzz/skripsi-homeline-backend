@@ -467,9 +467,6 @@ export const getHouseSurveyReq = async (req, res) => {
                 },
                 {
                     model: HouseProcesses,
-                    where: {
-                        survey_process: "Perlu Survey"
-                    },
                 },
             ],
         })
@@ -490,9 +487,6 @@ export const getHouseDesignReq = async (req, res) => {
                 },
                 {
                     model: HouseProcesses,
-                    where: {
-                        design_process: "Perlu Desain"
-                    },
                 },
             ],
         })
