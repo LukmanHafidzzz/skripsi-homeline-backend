@@ -13,6 +13,9 @@ export const getListHouse = async (req, res) => {
             },
             include: {
                 model: Houses,
+                include: {
+                    model: Address,
+                }
             }
         })
         res.status(200).json(house_processes);
