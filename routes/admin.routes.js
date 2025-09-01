@@ -10,8 +10,8 @@ import {
     postHouseInputQr,
     getHouseStatus3dYes,
     updateHousePaymentConfirm,
-    getHouseEmbedMaps,
-    postEmbedMaps,
+    getHouseGeoCoordinate,
+    postGeoCoordinate,
     getHouseSurveyReq,
     getHouseDesignReq,
     approveRequestSurvey,
@@ -38,8 +38,8 @@ router.get('/house/input-qr', getHouseInputQr);
 router.post('/house/input-qr', postHouseInputQr);
 router.get('/house/payment-confirm', getHouseStatus3dYes);
 router.patch('/house/payment-confirm/:id', updateHousePaymentConfirm);
-router.get('/house/embed-maps', getHouseEmbedMaps);
-router.patch('/house/embed-maps/:id', postEmbedMaps);
+router.get('/house/geo-coordinate', getHouseGeoCoordinate);
+router.patch('/house/geo-coordinate/:id', postGeoCoordinate);
 router.get('/request/survey-request', getHouseSurveyReq);
 router.get('/request/design-request', getHouseDesignReq);
 router.patch('/request/reject-survey-request/:id', rejectRequestSurvey);

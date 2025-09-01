@@ -6,6 +6,8 @@ import Certificates from "./certificate.model.js";
 import CertificateTypes from "./certificate.types.model.js";
 import Facilities from "./facilities.model.js";
 import HouseFacilities from "./house.facilities.model.js";
+import GeneralFacilityTypes from "./general_facility_types.model.js";
+import GeneralFacilities from "./general.facilities.model.js";
 import HouseProcesses from "./house.processes.model.js";
 import Address from "./address.model.js";
 import HousePhotos from "./house.photos.model.js";
@@ -44,6 +46,10 @@ Houses.belongsTo(Users, {
 });
 
 Houses.hasMany(HouseFacilities, {
+    foreignKey: 'house_id'
+});
+
+Houses.hasMany(GeneralFacilities, {
     foreignKey: 'house_id'
 });
 
@@ -109,6 +115,20 @@ HouseFacilities.belongsTo(Facilities, {
 });
 
 HouseFacilities.belongsTo(Houses, {
+    foreignKey: 'house_id'
+});
+
+// GeneralFacilityTypes
+GeneralFacilityTypes.hasMany(GeneralFacilities, {
+    foreignKey: 'type_id'
+});
+
+// GeneralFacilities
+GeneralFacilities.belongsTo(GeneralFacilityTypes, {
+    foreignKey: 'type_id'
+});
+
+GeneralFacilities.belongsTo(Houses, {
     foreignKey: 'house_id'
 });
 
@@ -193,6 +213,8 @@ export {
     CertificateTypes,
     Facilities,
     HouseFacilities,
+    GeneralFacilityTypes,
+    GeneralFacilities,
     HouseProcesses,
     Address,
     HousePhotos,

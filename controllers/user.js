@@ -1,5 +1,5 @@
 import { Op } from "sequelize";
-import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities } from "../models/index.model.js";
+import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
 import argon2 from "argon2";
 import { uploadToS3 } from "../utils/uploadS3.js";
 import sharp from "sharp";
@@ -575,8 +575,6 @@ export const addHouse = async (req, res) => {
             }
         }
 
-
-
         if (req.files && req.files.certificate) {
             const certFile = req.files.certificate;
             const fileName = `certificates/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${certFile.name}`;
@@ -687,6 +685,12 @@ export const getSearchHouseDetail = async (req, res) => {
                 },
                 {
                     model: HouseProcesses
+                },
+                {
+                    model: GeneralFacilities,
+                    include: [
+                        { model: GeneralFacilityTypes }
+                    ]
                 }
             ]
         });

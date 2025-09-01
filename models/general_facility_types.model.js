@@ -3,28 +3,24 @@ import db from "../config/database.js";
 
 const { DataTypes } = Sequelize;
 
-const HouseDesigns = db.define("house_designs", {
+const GeneralFacilityTypes = db.define('general_facility_types', {
     id: {
         type: DataTypes.BIGINT,
         autoIncrement: true,
         primaryKey: true,
+        allowNull: false,
         unique: true,
+        validate: {
+            notEmpty: true,
+        }
     },
-    house_id: {
-        type: DataTypes.BIGINT,
+    type: {
+        type: DataTypes.STRING,
         allowNull: false,
-    },
-    user_id: {
-        type: DataTypes.BIGINT,
-        allowNull: false,
-    },
-    floor_plan: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
-    },
-    design_file: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
+        unique: true,
+        validate: {
+            notEmpty: true,
+        }
     },
 }, {
     freezeTableName: true,
@@ -33,4 +29,4 @@ const HouseDesigns = db.define("house_designs", {
     updatedAt: 'updated_at',
 });
 
-export default HouseDesigns;
+export default GeneralFacilityTypes;

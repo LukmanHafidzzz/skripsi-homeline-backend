@@ -1,5 +1,5 @@
 import { Op } from "sequelize";
-import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests } from "../models/index.model.js";
+import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests, GeneralFacilityTypes, GeneralFacilities } from "../models/index.model.js";
 import argon2 from "argon2";
 import { uploadToS3 } from "../utils/uploadS3.js";
 
@@ -211,6 +211,12 @@ export const getHouseDetail = async (req, res) => {
                             attributes: ['username', 'email']
                         }
                     ]
+                },
+                {
+                    model: GeneralFacilities,
+                    include: [
+                        { model: GeneralFacilityTypes }
+                    ]
                 }
             ]
         });
@@ -420,12 +426,13 @@ export const updateHousePaymentConfirm = async (req, res) => {
     }
 };
 
-export const getHouseEmbedMaps = async (req, res) => {
+export const getHouseGeoCoordinate = async (req, res) => {
     try {
         const houses = await Houses.findAll({
             where: {
                 status: "Processing",
-                embed_maps: null,
+                latitude: null,
+                longitude: null,
             },
         });
         res.status(200).json(houses);
@@ -436,7 +443,7 @@ export const getHouseEmbedMaps = async (req, res) => {
     }
 }
 
-export const postEmbedMaps = async (req, res) => {
+export const postGeoCoordinate = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -445,11 +452,18 @@ export const postEmbedMaps = async (req, res) => {
             return res.status(404).json({ message: "Rumah tidak ditemukan" });
         }
 
-        const embedMap = req.body.embed_maps;
-        if (!embedMap) {
-            return res.status(400).json({ message: "Embed map tidak boleh kosong" });
+        const latitude = req.body.latitude;
+        if (!latitude) {
+            return res.status(400).json({ message: "Latitude tidak boleh kosong" });
         }
-        house.embed_maps = embedMap;
+        house.latitude = latitude;
+
+        const longitude = req.body.longitude;
+        if (!longitude) {
+            return res.status(400).json({ message: "Longitude tidak boleh kosong" });
+        }
+        house.longitude = longitude;
+
         await house.save();
 
         res.status(200).json({ message: "Berhasil melakukan input" });

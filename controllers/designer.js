@@ -1,6 +1,6 @@
 import { Op } from "sequelize";
-import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests } from "../models/index.model.js";
-import { generatePresignedUrl } from "../utils/uploadS3.js";
+import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
+import { generatePresignedUrl, uploadToS3 } from "../utils/uploadS3.js";
 
 export const getListHouse = async (req, res) => {
     try {
@@ -82,6 +82,12 @@ export const getHouseDetail = async (req, res) => {
                             model: Users,
                             attributes: ['username', 'email']
                         }
+                    ]
+                },
+                {
+                    model: GeneralFacilities,
+                    include: [
+                        { model: GeneralFacilityTypes }
                     ]
                 }
             ]
@@ -240,7 +246,6 @@ export const postInputHouseModel = async (req, res) => {
         const fileName = `design_${Date.now()}_${designFile.name}`;
         const fileBuffer = designFile.data;
         const mimetype = designFile.mimetype;
-
         const fileUrl = await uploadToS3(fileBuffer, fileName, mimetype);
 
         await HouseDesigns.create({
@@ -260,7 +265,7 @@ export const postInputHouseModel = async (req, res) => {
             }
         );
 
-        return res.status(201).json({ message: "File desain berhasil diinput!" });
+        return res.status(201).json({ message: "File berhasil diinput!" });
 
     } catch (error) {
         console.error(error);
@@ -355,10 +360,23 @@ export const saveDesignFileInfo = async (req, res) => {
             });
         }
 
+        let floorPlanUrl = null;
+
+        if (req.files && req.files.floor_plan) {
+            const floorPlanFile = req.files.floor_plan;
+            const fileName = `floorPlanPhotos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`;
+            floorPlanUrl = await uploadToS3(
+                floorPlanFile.data,
+                fileName,
+                floorPlanFile.mimetype
+            );
+        }
+
         await HouseDesigns.create({
             house_id: house_id,
             user_id: user.id,
-            design_file: fileUrl
+            design_file: fileUrl,
+            floor_plan: floorPlanUrl,
         });
 
         await HouseProcesses.update(

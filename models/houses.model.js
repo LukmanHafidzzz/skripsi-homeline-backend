@@ -70,7 +70,11 @@ const Houses = db.define('houses', {
             notEmpty: true,
         }
     },
-    embed_maps: {
+    latitude: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    },
+    longitude: {
         type: DataTypes.TEXT,
         allowNull: true,
     },

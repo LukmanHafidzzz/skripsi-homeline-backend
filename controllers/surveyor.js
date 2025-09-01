@@ -1,5 +1,5 @@
 import { Op } from "sequelize";
-import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests } from "../models/index.model.js";
+import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
 
 import { uploadToS3 } from "../utils/uploadS3.js";
 
@@ -83,6 +83,12 @@ export const getHouseDetail = async (req, res) => {
                             model: Users,
                             attributes: ['username', 'email']
                         }
+                    ]
+                },
+                {
+                    model: GeneralFacilities,
+                    include: [
+                        { model: GeneralFacilityTypes }
                     ]
                 }
             ]
@@ -190,6 +196,17 @@ export const getListHouseInput = async (req, res) => {
     }
 }
 
+export const getGeneralFacilityTypes = async (req, res) => {
+    try {
+        const response = await GeneralFacilityTypes.findAll();
+        res.status(200).json(response);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        });
+    }
+};
+
 export const postInputHouseSurvey = async (req, res) => {
     try {
         const { house_id, photo_video_link } = req.body;
@@ -225,6 +242,31 @@ export const postInputHouseSurvey = async (req, res) => {
             notes_file: fileUrl,
         });
 
+        if (req.body.general_facilities) {
+            let generalFacilities = [];
+            try {
+                generalFacilities = JSON.parse(req.body.general_facilities);
+            } catch (err) {
+                console.error("Error parsing generalFacilities:", err);
+                return res.status(400).json({ message: "Format fasilitas umum tidak valid" });
+            }
+
+            if (Array.isArray(generalFacilities)) {
+                for (const f of generalFacilities) {
+                    if (f.type_id && f.name && f.latitude && f.longitude && f.maps) {
+                        await GeneralFacilities.create({
+                            house_id: house_id,
+                            type_id: f.type_id,
+                            name: f.name,
+                            latitude: f.latitude,
+                            longitude: f.longitude,
+                            maps: f.maps,
+                        });
+                    }
+                }
+            }
+        }
+
         await HouseProcesses.update(
             {
                 survey_process: "Pengecekan Hasil"
@@ -237,7 +279,6 @@ export const postInputHouseSurvey = async (req, res) => {
         );
 
         return res.status(201).json({ message: "File catatan survei berhasil diinput!" });
-
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Terjadi kesalahan saat mengunggah file" });
