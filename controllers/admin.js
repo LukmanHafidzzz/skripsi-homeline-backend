@@ -129,7 +129,14 @@ export const deleteUser = async (req, res) => {
 
 export const getHouse = async (req, res) => {
     try {
-        const houses = await Houses.findAll();
+        const houses = await Houses.findAll({
+            include: [
+                {
+                    model: HousePhotos,
+                    limit: 1,
+                }
+            ],
+        });
         res.status(200).json(houses);
     } catch (error) {
         res.status(500).json({
