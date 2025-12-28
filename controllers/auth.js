@@ -31,23 +31,28 @@ export const login = async (req, res) => {
         const response = await Users.findOne({
             where: { email: req.body.email }
         });
+        
         if (!response) {
             return res.status(404).json({ message: "User tidak ditemukan" });
         }
+        
         const match = await argon2.verify(response.password, req.body.password);
         if (!match) {
             return res.status(400).json({ message: "Password salah" });
         }
         req.session.userId = response.uuid;
+        
         req.session.save((err) => {
             if (err) {
                 console.error('Session save error:', err);
                 return res.status(500).json({ message: "Gagal menyimpan session" });
             }
+            
             const uuid = response.uuid;
             const name = response.username;
             const email = response.email;
             const level_status_id = response.level_status_id;
+            
             res.status(200).json({
                 uuid,
                 name,

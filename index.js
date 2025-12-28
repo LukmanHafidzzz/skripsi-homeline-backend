@@ -93,6 +93,14 @@ app.use("/api/designer", DesignerRoute);
 app.use("/api/admin/level-users", LevelUserRoute);
 app.use("/api/auth", AuthRoute);
 app.use("/api/user", UserRoute);
+app.get('/api/test-session', (req, res) => {
+    res.json({
+        sessionID: req.sessionID,
+        session: req.session,
+        userId: req.session?.userId,
+        isAuthenticated: !!req.session?.userId
+    });
+});
 
 // store.sync();
 
