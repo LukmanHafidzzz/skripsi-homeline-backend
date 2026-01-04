@@ -189,6 +189,7 @@ export const postReject3dOfferingStatus = async (req, res) => {
             });
         }
 
+        houses.use_3d = "no";
         house.status = "Processing";
         await house.save();
 

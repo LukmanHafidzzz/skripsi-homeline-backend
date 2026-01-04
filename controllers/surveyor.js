@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, where } from "sequelize";
 import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
 
 import { uploadToS3 } from "../utils/uploadS3.js";
@@ -111,32 +111,30 @@ export const getHouseDetail = async (req, res) => {
 export const getListHouseMakeReq = async (req, res) => {
     try {
         const house_processes = await HouseProcesses.findAll({
-            where: {
-                survey_process: "Perlu Survey"
-            },
             include: [
                 {
                     model: Houses,
-                    include: {
-                        model: Address,
-                    },
-                },
-                {
-                    model: SurveyRequests,
-                    required: false
+                    include: [
+                        {
+                            model: Address,
+                        },
+                        {
+                            model: SurveyRequests,
+                            required: false
+                        }
+                    ]
                 }
             ]
         });
 
-        const filtered = house_processes.filter(hp => hp.survey_request === null);
-
-        res.status(200).json(filtered);
+        res.status(200).json(house_processes);
     } catch (error) {
         res.status(500).json({
             message: error.message,
         })
     }
 }
+
 
 export const postMakeRequest = async (req, res) => {
     try {
@@ -179,13 +177,24 @@ export const getListHouseInput = async (req, res) => {
     try {
         const house_processes = await HouseProcesses.findAll({
             where: {
-                survey_process: "Sedang Survey"
+                survey_process: {
+                    [Op.or]: [
+                        "Sedang Survey",
+                        "Pengecekan Hasil",
+                    ]
+                }
             },
             include: {
                 model: Houses,
-                include: {
-                    model: Address,
-                }
+                include: [
+                    {
+                        model: Address,
+                    },
+                    {
+                        model: HouseSurveys,
+                        required: false,
+                    }
+                ]
             }
         })
         res.status(200).json(house_processes);

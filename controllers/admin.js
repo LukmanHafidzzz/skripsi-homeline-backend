@@ -132,8 +132,7 @@ export const getHouse = async (req, res) => {
         const houses = await Houses.findAll({
             include: [
                 {
-                    model: HousePhotos,
-                    limit: 1,
+                    model: Users,
                 }
             ],
         });

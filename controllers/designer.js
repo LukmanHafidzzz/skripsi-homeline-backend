@@ -138,7 +138,14 @@ export const getListHouseMakeReq = async (req, res) => {
     try {
         const house_processes = await HouseProcesses.findAll({
             where: {
-                design_process: "Perlu Desain"
+                design_process: {
+                    [Op.or]:[
+                        "Perlu Desain",
+                        "Sedang Desain",
+                        "Pengecekan Hasil",
+                        "Desain Selesai",
+                    ]
+                }
             },
             include: [
                 {
