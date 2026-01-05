@@ -181,6 +181,7 @@ export const getListHouseInput = async (req, res) => {
                     [Op.or]: [
                         "Sedang Survey",
                         "Pengecekan Hasil",
+                        "Survey Selesai",
                     ]
                 }
             },

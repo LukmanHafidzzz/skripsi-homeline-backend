@@ -139,7 +139,7 @@ export const getListHouseMakeReq = async (req, res) => {
         const house_processes = await HouseProcesses.findAll({
             where: {
                 design_process: {
-                    [Op.or]:[
+                    [Op.or]: [
                         "Perlu Desain",
                         "Sedang Desain",
                         "Pengecekan Hasil",
@@ -150,20 +150,20 @@ export const getListHouseMakeReq = async (req, res) => {
             include: [
                 {
                     model: Houses,
-                    include: {
-                        model: Address,
-                    },
-                },
-                {
-                    model: DesignRequests,
-                    required: false
+                    include: [
+                        {
+                            model: Address,
+                        },
+                        {
+                            model: DesignRequests,
+                            required: false,
+                        }
+                    ]
                 }
             ]
         });
 
-        const filtered = house_processes.filter(hp => hp.design_request === null);
-
-        res.status(200).json(filtered);
+        res.status(200).json(house_processes);
     } catch (error) {
         res.status(500).json({
             message: error.message,
@@ -212,13 +212,25 @@ export const getListHouseInput = async (req, res) => {
     try {
         const house_processes = await HouseProcesses.findAll({
             where: {
-                design_process: "Sedang Desain"
+                design_process: {
+                    [Op.or]: [
+                        "Sedang Desain",
+                        "Pengecekan Hasil",
+                        "Desain Selesai",
+                    ]
+                }
             },
             include: {
                 model: Houses,
-                include: {
-                    model: Address,
-                }
+                include: [
+                    {
+                        model: Address,
+                    },
+                    {
+                        model: HouseDesigns,
+                        required: false,
+                    },
+                ]
             }
         })
         res.status(200).json(house_processes);
