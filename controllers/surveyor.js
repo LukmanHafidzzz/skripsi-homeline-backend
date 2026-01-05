@@ -68,6 +68,10 @@ export const getHouseDetail = async (req, res) => {
                     model: HouseProcesses
                 },
                 {
+                    model: HouseSurveys,
+                    required: false,
+                },
+                {
                     model: SurveyRequests,
                     include: [
                         {
