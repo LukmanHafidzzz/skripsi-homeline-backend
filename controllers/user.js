@@ -452,6 +452,12 @@ export const getHouseAdvertisementDetail = async (req, res) => {
                 },
                 {
                     model: HouseProcesses
+                },
+                {
+                    model: GeneralFacilities,
+                    include: [
+                        { model: GeneralFacilityTypes }
+                    ]
                 }
             ]
         });
