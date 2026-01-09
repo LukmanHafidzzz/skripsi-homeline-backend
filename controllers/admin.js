@@ -698,7 +698,12 @@ export const getSurveyHasilInput = async (req, res) => {
                 {
                     model: HouseProcesses,
                     where: {
-                        survey_process: "Pengecekan Hasil"
+                        survey_process: {
+                            [Op.or]: [
+                                "Pengecekan Hasil",
+                                "Survey Selesai"
+                            ]
+                        }
                     }
                 },
             ]
@@ -791,7 +796,12 @@ export const getDesignHasilInput = async (req, res) => {
                 {
                     model: HouseProcesses,
                     where: {
-                        design_process: "Pengecekan Hasil"
+                        design_process: {
+                            [Op.or]: [
+                                "Pengecekan Hasil",
+                                "Desain Selesai"
+                            ],
+                        },
                     }
                 },
             ]
