@@ -328,7 +328,6 @@ export const getHouseInputQr = async (req, res) => {
     try {
         const houses = await Houses.findAll({
             where: {
-                status: "Waiting Payment",
                 use_3d: "yes",
             },
             include: [{
@@ -375,7 +374,6 @@ export const getHouseStatus3dYes = async (req, res) => {
     try {
         const houses = await Houses.findAll({
             where: {
-                status: "Waiting Payment",
                 use_3d: "yes",
             },
             include: [
@@ -436,9 +434,12 @@ export const getHouseGeoCoordinate = async (req, res) => {
     try {
         const houses = await Houses.findAll({
             where: {
-                status: "Processing",
-                latitude: null,
-                longitude: null,
+                status: {
+                    [Op.or]: [
+                        "Processing",
+                        "Approved"
+                    ]
+                },
             },
         });
         res.status(200).json(houses);
