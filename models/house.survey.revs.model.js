@@ -3,26 +3,31 @@ import db from "../config/database.js";
 
 const { DataTypes } = Sequelize;
 
-const DesignRequests = db.define("design_requests", {
+const HouseSurveyRevs = db.define("house_survey_revs", {
     id: {
         type: DataTypes.BIGINT,
         autoIncrement: true,
         primaryKey: true,
+        allowNull: false,
         unique: true,
+        validate: {
+            notEmpty: true,
+        }
     },
-    house_id: {
+    house_survey_id: {
         type: DataTypes.BIGINT,
         allowNull: false,
+        validate: {
+            notEmpty: true,
+        }
     },
-    user_id: {
-        type: DataTypes.BIGINT,
+    comment: {
+        type: DataTypes.TEXT,
         allowNull: false,
-    },
-    request_status: {
-        type: DataTypes.ENUM("Approved", "Rejected", "Waiting"),
-        allowNull: false,
-        defaultValue: "Waiting",
-    },
+        validate: {
+            notEmpty: true,
+        }
+    }
 }, {
     freezeTableName: true,
     timestamps: true,
@@ -30,4 +35,4 @@ const DesignRequests = db.define("design_requests", {
     updatedAt: 'updated_at',
 });
 
-export default DesignRequests;
+export default HouseSurveyRevs;

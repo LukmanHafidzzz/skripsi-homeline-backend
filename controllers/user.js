@@ -115,100 +115,6 @@ export const getHouseByUserIdPending = async (req, res) => {
     }
 };
 
-export const getHouseByUserId3dOffer = async (req, res) => {
-    try {
-        if (!req.session.userId) {
-            return res.status(401).json({
-                message: "Mohon login ke akun anda"
-            });
-        }
-
-        const users = await Users.findOne({
-            where: { uuid: req.session.userId }
-        });
-
-        if (!users) {
-            return res.status(404).json({
-                message: "User tidak ditemukan"
-            });
-        }
-
-        const houses = await Houses.findAll({
-            where: {
-                user_id: users.id,
-                status: 'Offering 3D',
-            }
-        });
-
-        res.status(200).json(houses);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-export const postApprove3dOfferingStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const houses = await Houses.findOne({
-            where: { id },
-        });
-
-        if (!houses) {
-            return res.status(404).json({
-                message: "Rumah tidak ditemukan"
-            });
-        }
-
-        houses.use_3d = "yes";
-        houses.status = "Waiting Payment";
-        await houses.save();
-
-        res.status(200).json({
-            message: "Status berhasil diperbarui",
-            houses
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
-    }
-};
-
-export const postReject3dOfferingStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const house = await Houses.findOne({
-            where: { id },
-        });
-
-        if (!house) {
-            return res.status(404).json({
-                message: "Rumah tidak ditemukan"
-            });
-        }
-
-        houses.use_3d = "no";
-        house.status = "Processing";
-        await house.save();
-
-        await HouseProcesses.create({
-            house_id: house.id,
-            survey_process: "Perlu Survey"
-        });
-
-        res.status(200).json({
-            message: "Status rumah berhasil diperbarui",
-            house
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
-    }
-};
-
 export const getHouseByUserIdWaitingPayment = async (req, res) => {
     try {
         if (!req.session.userId) {
@@ -526,14 +432,16 @@ export const addHouse = async (req, res) => {
             village,
             full_address,
             certificate_type_id,
-            facilities: facilitiesString
+            facilities: facilitiesString,
+            use_3d,
         } = req.body;
 
         if (!title || !building_area || !land_area || !price || !no_telp || !description || !link_maps ||
-            !province || !city || !subdistrict || !village || !full_address || !certificate_type_id) {
+            !province || !city || !subdistrict || !village || !full_address || !certificate_type_id || !use_3d) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
+        const use3DValue = use_3d === 'yes' ? 'yes' : 'no';
         let facilities = [];
         if (facilitiesString) {
             try {
@@ -553,7 +461,8 @@ export const addHouse = async (req, res) => {
             price: parseFloat(price),
             no_telp,
             description,
-            link_maps
+            link_maps,
+            use_3d: use3DValue,
         });
 
         await Address.create({

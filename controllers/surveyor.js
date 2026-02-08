@@ -1,5 +1,5 @@
 import { Op, where } from "sequelize";
-import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
+import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, HouseDesignRevs, HouseSurveyRevs, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
 
 import { uploadToS3 } from "../utils/uploadS3.js";
 
@@ -72,24 +72,6 @@ export const getHouseDetail = async (req, res) => {
                     required: false,
                 },
                 {
-                    model: SurveyRequests,
-                    include: [
-                        {
-                            model: Users,
-                            attributes: ['username', 'email']
-                        }
-                    ]
-                },
-                {
-                    model: DesignRequests,
-                    include: [
-                        {
-                            model: Users,
-                            attributes: ['username', 'email']
-                        }
-                    ]
-                },
-                {
                     model: GeneralFacilities,
                     include: [
                         { model: GeneralFacilityTypes }
@@ -112,25 +94,22 @@ export const getHouseDetail = async (req, res) => {
     }
 };
 
-export const getListHouseMakeReq = async (req, res) => {
+export const getListHouseNeedSurvey = async (req, res) => {
     try {
         const house_processes = await HouseProcesses.findAll({
-            include: [
-                {
-                    model: Houses,
-                    include: [
-                        {
-                            model: Address,
-                        },
-                        {
-                            model: SurveyRequests,
-                            required: false
-                        }
-                    ]
+            where: {
+                survey_process: "Perlu Survey"
+            },
+            include: {
+                model: Houses,
+                include: {
+                    model: Address,
                 }
+            },
+            order: [
+                ["created_at", "ASC"]
             ]
-        });
-
+        })
         res.status(200).json(house_processes);
     } catch (error) {
         res.status(500).json({
@@ -139,38 +118,46 @@ export const getListHouseMakeReq = async (req, res) => {
     }
 }
 
-
-export const postMakeRequest = async (req, res) => {
+export const startSurvey = async (req, res) => {
     try {
-        const { house_id } = req.body;
+        const { id } = req.params;
 
-        if (!req.session.userId) {
-            return res.status(401).json({
-                message: "Mohon login terlebih dahulu"
+        const pendingSurvey = await HouseProcesses.findOne({
+            where: {
+                survey_process: "Sedang Survey",
+                survey_status_input: null
+            }
+        });
+
+        if (pendingSurvey) {
+            return res.status(400).json({
+                message: "Selesaikan input survey sebelumnya terlebih dahulu."
             });
         }
 
-        const user = await Users.findOne({
-            where: { uuid: req.session.userId }
-        });
+        const houseProcess = await HouseProcesses.findByPk(id);
 
-        if (!user) {
+        if (!houseProcess) {
             return res.status(404).json({
-                message: "User tidak ditemukan"
+                message: "Data house process tidak ditemukan",
             });
         }
 
-        const newRequest = await SurveyRequests.create({
-            house_id,
-            user_id: user.id
+        if (houseProcess.survey_process !== "Perlu Survey") {
+            return res.status(400).json({
+                message: "Survey sudah diklaim atau sedang diproses",
+            });
+        }
+
+        await houseProcess.update({
+            survey_process: "Sedang Survey",
         });
 
-        res.status(201).json({
-            message: "Request berhasil dibuat",
-            data: newRequest,
+        res.status(200).json({
+            message: "Survey berhasil diklaim",
         });
+
     } catch (error) {
-        console.error(error);
         res.status(500).json({
             message: error.message,
         });
@@ -184,7 +171,6 @@ export const getListHouseInput = async (req, res) => {
                 survey_process: {
                     [Op.or]: [
                         "Sedang Survey",
-                        "Pengecekan Hasil",
                         "Survey Selesai",
                     ]
                 }
@@ -283,7 +269,7 @@ export const postInputHouseSurvey = async (req, res) => {
 
         await HouseProcesses.update(
             {
-                survey_process: "Pengecekan Hasil"
+                survey_status_input: "Pengecekan Hasil"
             },
             {
                 where: {
@@ -296,5 +282,130 @@ export const postInputHouseSurvey = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Terjadi kesalahan saat mengunggah file" });
+    }
+};
+
+export const getSurveyNeedRevListHouse = async (req, res) => {
+    try {
+        const houses = await Houses.findAll({
+            include: [
+                {
+                    model: HouseProcesses,
+                    where: {
+                        survey_status_input: "Revisi",
+                    },
+                    include: [
+                        {
+                            model: HouseSurveyRevs,
+                            limit: 1,
+                            order: [['created_at', 'DESC']]
+                        }
+                    ]
+                }
+            ]
+        });
+        const filteredHouses = houses.filter(house =>
+            house.house_process?.house_survey_revs?.length > 0
+        );
+
+        res.status(200).json(filteredHouses);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        });
+    }
+};
+
+export const revHouseSurvey = async (req, res) => {
+    try {
+        const { house_id, photo_video_link } = req.body;
+        const surveyFile = req.files?.notes_file;
+
+        if (!photo_video_link) {
+            return res.status(400).json({ message: "Link dokumentasi harus diisi" });
+        }
+
+        if (!req.session.userId) {
+            return res.status(401).json({ message: "Mohon login terlebih dahulu" });
+        }
+
+        const user = await Users.findOne({
+            where: { uuid: req.session.userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User tidak ditemukan" });
+        }
+
+        const existingSurvey = await HouseSurveys.findOne({
+            where: { house_id }
+        });
+
+        if (!existingSurvey) {
+            return res.status(404).json({ message: "Data survey tidak ditemukan" });
+        }
+
+        let fileUrl = existingSurvey.notes_file;
+
+        if (surveyFile) {
+            const fileName = `surveys/survey_${Date.now()}_${surveyFile.name}`;
+            fileUrl = await uploadToS3(
+                surveyFile.data,
+                fileName,
+                surveyFile.mimetype
+            );
+        }
+
+        await existingSurvey.update({
+            photo_video_link,
+            notes_file: fileUrl,
+        });
+
+        if (req.body.general_facilities) {
+
+            let generalFacilities = [];
+
+            try {
+                generalFacilities = JSON.parse(req.body.general_facilities);
+            } catch (err) {
+                return res.status(400).json({
+                    message: "Format fasilitas umum tidak valid"
+                });
+            }
+
+            if (Array.isArray(generalFacilities)) {
+                for (const f of generalFacilities) {
+                    if (f.type_id && f.name && f.latitude && f.longitude && f.maps) {
+                        await GeneralFacilities.create({
+                            house_id,
+                            type_id: f.type_id,
+                            name: f.name,
+                            latitude: f.latitude,
+                            longitude: f.longitude,
+                            maps: f.maps,
+                        });
+                    }
+                }
+            }
+        }
+
+        await HouseProcesses.update(
+            {
+                survey_status_input: "Pengecekan Hasil"
+            },
+            {
+                where: { house_id }
+            }
+        );
+
+        return res.status(200).json({
+            message: "Revisi survey berhasil disimpan"
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Terjadi kesalahan saat revisi survey"
+        });
     }
 };

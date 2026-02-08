@@ -1,5 +1,5 @@
 import { Op } from "sequelize";
-import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
+import { Users, CertificateTypes, Houses, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, HouseDesignRevs, HouseSurveyRevs, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
 import { generatePresignedUrl, uploadToS3 } from "../utils/uploadS3.js";
 
 export const getListHouse = async (req, res) => {
@@ -67,24 +67,6 @@ export const getHouseDetail = async (req, res) => {
                     model: HouseProcesses
                 },
                 {
-                    model: SurveyRequests,
-                    include: [
-                        {
-                            model: Users,
-                            attributes: ['username', 'email']
-                        }
-                    ]
-                },
-                {
-                    model: DesignRequests,
-                    include: [
-                        {
-                            model: Users,
-                            attributes: ['username', 'email']
-                        }
-                    ]
-                },
-                {
                     model: GeneralFacilities,
                     include: [
                         { model: GeneralFacilityTypes }
@@ -130,80 +112,6 @@ export const getHouse3DModel = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             message: error.message
-        });
-    }
-};
-
-export const getListHouseMakeReq = async (req, res) => {
-    try {
-        const house_processes = await HouseProcesses.findAll({
-            where: {
-                design_process: {
-                    [Op.or]: [
-                        "Perlu Desain",
-                        "Sedang Desain",
-                        "Pengecekan Hasil",
-                        "Desain Selesai",
-                    ]
-                }
-            },
-            include: [
-                {
-                    model: Houses,
-                    include: [
-                        {
-                            model: Address,
-                        },
-                        {
-                            model: DesignRequests,
-                            required: false,
-                        }
-                    ]
-                }
-            ]
-        });
-
-        res.status(200).json(house_processes);
-    } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        })
-    }
-}
-
-export const postMakeRequest = async (req, res) => {
-    try {
-        const { house_id } = req.body;
-
-        if (!req.session.userId) {
-            return res.status(401).json({
-                message: "Mohon login terlebih dahulu"
-            });
-        }
-
-        const user = await Users.findOne({
-            where: { uuid: req.session.userId }
-        });
-
-        if (!user) {
-            return res.status(404).json({
-                message: "User tidak ditemukan"
-            });
-        }
-
-        const newRequest = await DesignRequests.create({
-            house_id,
-            user_id: user.id
-        });
-
-        res.status(201).json({
-            message: "Request berhasil dibuat",
-            data: newRequest,
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            message: error.message,
         });
     }
 };

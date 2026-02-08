@@ -12,18 +12,14 @@ import {
     updateHousePaymentConfirm,
     getHouseGeoCoordinate,
     postGeoCoordinate,
-    getHouseSurveyReq,
-    getHouseDesignReq,
-    approveRequestSurvey,
-    rejectRequestSurvey,
-    approveRequestDesign,
-    rejectRequestDesign,
     getSurveyListHouse,
     getSurveyHasilInput,
     approveInputHasilSurvey,
     getDesignListHouse,
     getDesignHasilInput,
     approveInputHasilDesign,
+    revInputHasilSurvey,
+    getSurveyRevisionListHouse,
 } from "../controllers/admin.js";
 
 const router = express.Router();
@@ -40,16 +36,12 @@ router.get('/house/payment-confirm', getHouseStatus3dYes);
 router.patch('/house/payment-confirm/:id', updateHousePaymentConfirm);
 router.get('/house/geo-coordinate', getHouseGeoCoordinate);
 router.patch('/house/geo-coordinate/:id', postGeoCoordinate);
-router.get('/request/survey-request', getHouseSurveyReq);
-router.get('/request/design-request', getHouseDesignReq);
-router.patch('/request/reject-survey-request/:id', rejectRequestSurvey);
-router.patch('/request/approve-survey-request/:id', approveRequestSurvey);
-router.patch('/request/reject-design-request/:id', rejectRequestDesign);
-router.patch('/request/approve-design-request/:id', approveRequestDesign);
 
 router.get('/survey/house-list', getSurveyListHouse);
 router.get('/survey/survey-input', getSurveyHasilInput);
 router.patch('/survey/survey-input/:id', approveInputHasilSurvey);
+router.patch('/survey/revision/:id', revInputHasilSurvey);
+router.get('/survey/revision-house-list', getSurveyRevisionListHouse);
 
 router.get('/design/house-list', getDesignListHouse);
 router.get('/design/design-input', getDesignHasilInput);

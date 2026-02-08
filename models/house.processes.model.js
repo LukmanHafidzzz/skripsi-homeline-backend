@@ -22,12 +22,38 @@ const HouseProcesses = db.define("house_processes", {
         },
     },
     survey_process: {
-        type: DataTypes.ENUM("Perlu Survey", "Sedang Survey", "Pengecekan Hasil", "Survey Selesai"),
+        type: DataTypes.ENUM(
+            "Perlu Survey",
+            "Sedang Survey",
+            "Survey Selesai"
+        ),
         allowNull: true,
     },
     design_process: {
-        type: DataTypes.ENUM("Perlu Desain", "Sedang Desain", "Pengecekan Hasil", "Desain Selesai"),
+        type: DataTypes.ENUM(
+            "Perlu Desain",
+            "Sedang Desain",
+            "Desain Selesai"
+        ),
         allowNull: true,
+    },
+    survey_status_input: {
+        type: DataTypes.ENUM(
+            "Pengecekan Hasil",
+            "Revisi",
+            "Approved"
+        ),
+        allowNull: false,
+        defaultValue: null
+    },
+    design_status_input: {
+        type: DataTypes.ENUM(
+            "Pengecekan Hasil",
+            "Revisi",
+            "Approved"
+        ),
+        allowNull: false,
+        defaultValue: null
     },
 }, {
     freezeTableName: true,

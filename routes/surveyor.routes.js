@@ -2,21 +2,25 @@ import express from "express";
 import {
     getListHouse,
     getHouseDetail,
-    getListHouseMakeReq,
-    postMakeRequest,
+    getListHouseNeedSurvey,
     getListHouseInput,
     getGeneralFacilityTypes,
     postInputHouseSurvey,
+    startSurvey,
+    getSurveyNeedRevListHouse,
+    revHouseSurvey,
 } from "../controllers/surveyor.js";
 
 const router = express.Router();
 
 router.get('/house-list', getListHouse);
 router.get('/house-detail/:id', getHouseDetail);
-router.get('/make-request', getListHouseMakeReq);
-router.post('/make-request', postMakeRequest);
+router.get('/need-survey', getListHouseNeedSurvey);
 router.get('/result-input', getListHouseInput); 
+router.patch('/start-survey/:id', startSurvey);
 router.get('/general-facility-types', getGeneralFacilityTypes);
 router.post('/input-house-survey', postInputHouseSurvey);
+router.get('/rev-house-survey', getSurveyNeedRevListHouse);
+router.put('/rev-house-survey', revHouseSurvey);
 
 export default router;

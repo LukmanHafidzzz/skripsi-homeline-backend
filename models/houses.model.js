@@ -83,7 +83,7 @@ const Houses = db.define('houses', {
         allowNull: true,
     },
     status: {
-        type: DataTypes.ENUM('Approved', 'Rejected', 'Pending', 'Waiting Payment', 'Offering 3d', 'Processing'),
+        type: DataTypes.ENUM('Approved', 'Rejected', 'Pending', 'Waiting Payment', 'Processing'),
         allowNull: false,
         defaultValue: 'pending',
     },

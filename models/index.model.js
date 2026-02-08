@@ -14,8 +14,8 @@ import HousePhotos from "./house.photos.model.js";
 import Payments from "./payments.model.js";
 import HouseSurveys from "./house.surveys.model.js";
 import HouseDesigns from "./house.designs.model.js";
-import SurveyRequests from "./survey.requests.model.js";
-import DesignRequests from "./design.requests.model.js";
+import HouseSurveyRevs from "./house.survey.revs.model.js";
+import HouseDesignRevs from "./house.design.rev.model.js";
 
 // Users
 Users.belongsTo(LevelUsers, {
@@ -81,14 +81,6 @@ Houses.hasOne(HouseDesigns, {
     foreignKey: "house_id",
 });
 
-Houses.hasOne(SurveyRequests, {
-    foreignKey: "house_id",
-});
-
-Houses.hasOne(DesignRequests, {
-    foreignKey: "house_id",
-});
-
 // CertificateTypes
 CertificateTypes.hasMany(Certificates, {
     foreignKey: 'certificate_type_id'
@@ -137,12 +129,12 @@ HouseProcesses.belongsTo(Houses, {
     foreignKey: "house_id",
 });
 
-HouseProcesses.hasOne(SurveyRequests, {
-    foreignKey: 'house_id'
+HouseProcesses.hasMany(HouseSurveyRevs, {
+    foreignKey: "house_survey_id",
 });
 
-HouseProcesses.hasOne(DesignRequests, {
-    foreignKey: 'house_id'
+HouseProcesses.hasMany(HouseDesignRevs, {
+    foreignKey: "house_design_id",
 });
 
 // Address
@@ -178,30 +170,14 @@ HouseDesigns.belongsTo(Users, {
     foreignKey: "user_id",
 });
 
-// SurveyRequests
-SurveyRequests.belongsTo(Users, {
-    foreignKey: "user_id",
+// HouseSurveyRevs
+HouseSurveyRevs.belongsTo(HouseProcesses, {
+    foreignKey: "house_survey_id",
 });
 
-SurveyRequests.belongsTo(Houses, {
-    foreignKey: "house_id",
-});
-
-SurveyRequests.belongsTo(HouseProcesses, {
-    foreignKey: 'house_id'
-});
-
-// DesignRequests
-DesignRequests.belongsTo(Users, {
-    foreignKey: "user_id",
-});
-
-DesignRequests.belongsTo(Houses, {
-    foreignKey: "house_id",
-});
-
-DesignRequests.belongsTo(HouseProcesses, {
-    foreignKey: 'house_id'
+// HouseDesignRevs
+HouseDesignRevs.belongsTo(HouseProcesses, {
+    foreignKey: "house_design_id",
 });
 
 export {
@@ -221,6 +197,6 @@ export {
     Payments,
     HouseSurveys,
     HouseDesigns,
-    SurveyRequests,
-    DesignRequests,
+    HouseSurveyRevs,
+    HouseDesignRevs,
 };

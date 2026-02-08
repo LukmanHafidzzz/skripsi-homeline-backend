@@ -1,5 +1,5 @@
-import { Op } from "sequelize";
-import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, SurveyRequests, DesignRequests, GeneralFacilityTypes, GeneralFacilities } from "../models/index.model.js";
+import { Op, Sequelize } from "sequelize";
+import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, HouseDesignRevs, HouseSurveyRevs, GeneralFacilityTypes, GeneralFacilities } from "../models/index.model.js";
 import argon2 from "argon2";
 import { uploadToS3 } from "../utils/uploadS3.js";
 
@@ -198,25 +198,15 @@ export const getHouseDetail = async (req, res) => {
                     model: HouseDesigns
                 },
                 {
-                    model: HouseProcesses
-                },
-                {
-                    model: SurveyRequests,
+                    model: HouseProcesses,
                     include: [
                         {
-                            model: Users,
-                            attributes: ['username', 'email']
-                        }
-                    ]
-                },
-                {
-                    model: DesignRequests,
-                    include: [
+                            model: HouseSurveyRevs,
+                        },
                         {
-                            model: Users,
-                            attributes: ['username', 'email']
-                        }
-                    ]
+                            model: HouseDesignRevs,
+                        },
+                    ],
                 },
                 {
                     model: GeneralFacilities,
@@ -255,7 +245,7 @@ export const updateHousePendingToOffering = async (req, res) => {
             });
         }
 
-        house.status = "Offering 3D";
+        house.status = "Waiting Payment";
         await house.save();
 
         res.status(200).json({
@@ -479,199 +469,6 @@ export const postGeoCoordinate = async (req, res) => {
     }
 }
 
-export const getHouseSurveyReq = async (req, res) => {
-    try {
-        const survey_requests = await SurveyRequests.findAll({
-            include: [
-                {
-                    model: Houses,
-                },
-                {
-                    model: HouseProcesses,
-                },
-            ],
-        })
-        res.status(200).json(survey_requests);
-    } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        })
-    }
-}
-
-export const getHouseDesignReq = async (req, res) => {
-    try {
-        const design_requests = await DesignRequests.findAll({
-            include: [
-                {
-                    model: Houses,
-                },
-                {
-                    model: HouseProcesses,
-                },
-            ],
-        })
-        res.status(200).json(design_requests);
-    } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        })
-    }
-}
-
-export const rejectRequestSurvey = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const surveyRequest = await SurveyRequests.findOne({
-            where: {
-                house_id: id
-            },
-        });
-
-        if (!surveyRequest) {
-            return res.status(404).json({
-                message: "Survey request tidak ditemukan untuk rumah ini"
-            });
-        }
-
-        surveyRequest.request_status = "Rejected";
-        await surveyRequest.save();
-
-        res.status(200).json({
-            message: "Status survey request berhasil diperbarui",
-            surveyRequest
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
-    }
-};
-
-export const approveRequestSurvey = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const surveyRequest = await SurveyRequests.findOne({
-            where: {
-                house_id: id
-            },
-        });
-
-        if (!surveyRequest) {
-            return res.status(404).json({
-                message: "Survey request tidak ditemukan untuk rumah ini"
-            });
-        }
-
-        surveyRequest.request_status = "Approved";
-        await surveyRequest.save();
-
-        const houseProcess = await HouseProcesses.findOne({
-            where: { house_id: id }
-        });
-
-        if (!houseProcess) {
-            return res.status(404).json({
-                message: "House process tidak ditemukan untuk rumah ini"
-            });
-        }
-
-        houseProcess.survey_process = "Sedang Survey";
-        await houseProcess.save();
-
-        res.status(200).json({
-            message: "Status berhasil diperbarui",
-            surveyRequest,
-            houseProcess
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
-    }
-};
-
-export const rejectRequestDesign = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const designRequest = await DesignRequests.findOne({
-            where: {
-                house_id: id
-            },
-        });
-
-        if (!designRequest) {
-            return res.status(404).json({
-                message: "Design request tidak ditemukan untuk rumah ini"
-            });
-        }
-
-        designRequest.request_status = "Rejected";
-        await designRequest.save();
-
-        res.status(200).json({
-            message: "Status design request berhasil diperbarui",
-            designRequest
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
-    }
-};
-
-export const approveRequestDesign = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const designRequest = await DesignRequests.findOne({
-            where: {
-                house_id: id
-            },
-        });
-
-        if (!designRequest) {
-            return res.status(404).json({
-                message: "Design tidak ditemukan untuk rumah ini"
-            });
-        }
-
-        designRequest.request_status = "Approved";
-        await designRequest.save();
-
-        res.status(200).json({
-            message: "Status design request berhasil diperbarui",
-            designRequest
-        });
-
-        const houseProcess = await HouseProcesses.findOne({
-            where: { house_id: id }
-        });
-
-        if (!houseProcess) {
-            return res.status(404).json({
-                message: "House process tidak ditemukan untuk rumah ini"
-            });
-        }
-
-        houseProcess.design_process = "Sedang Desain";
-        await houseProcess.save();
-
-        res.status(200).json({
-            message: "Status berhasil diperbarui",
-            designRequest,
-            houseProcess
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
-    }
-};
-
 export const getSurveyListHouse = async (req, res) => {
     try {
         const house_processes = await HouseProcesses.findAll({
@@ -698,24 +495,35 @@ export const getSurveyHasilInput = async (req, res) => {
             include: [
                 {
                     model: HouseProcesses,
+                    as: "house_process",
                     where: {
-                        survey_process: {
-                            [Op.or]: [
-                                "Pengecekan Hasil",
-                                "Survey Selesai"
-                            ]
-                        }
+                        [Op.or]: [
+                            { survey_status_input: "Pengecekan Hasil" },
+                            { survey_process: "Survey Selesai" }
+                        ]
                     }
-                },
+                }
+            ],
+            order: [
+                [
+                    Sequelize.literal(`
+                        CASE 
+                            WHEN house_process.survey_status_input = 'Pengecekan Hasil' THEN 1
+                            WHEN house_process.survey_process = 'Survey Selesai' THEN 2
+                            ELSE 3
+                        END
+                    `),
+                    "ASC"
+                ]
             ]
         });
+
         res.status(200).json(houses);
     } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        })
+        res.status(500).json({ message: error.message });
     }
-}
+};
+
 
 export const approveInputHasilSurvey = async (req, res) => {
     try {
@@ -769,6 +577,79 @@ export const approveInputHasilSurvey = async (req, res) => {
     }
 };
 
+export const revInputHasilSurvey = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { comment } = req.body;
+
+        if (!comment || comment.trim() === "") {
+            return res.status(400).json({
+                message: "Komentar revisi wajib diisi"
+            });
+        }
+
+        const inputSurvey = await HouseProcesses.findOne({
+            where: {
+                house_id: id
+            }
+        });
+
+        if (!inputSurvey) {
+            return res.status(404).json({
+                message: "Data survey tidak ditemukan"
+            });
+        }
+
+        await HouseSurveyRevs.create({
+            house_survey_id: inputSurvey.id,
+            comment: comment
+        });
+
+        inputSurvey.survey_status_input = "Revisi";
+
+        await inputSurvey.save();
+
+        res.status(200).json({
+            message: "Revisi berhasil dikirim"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+
+export const getSurveyRevisionListHouse = async (req, res) => {
+    try {
+        const houses = await Houses.findAll({
+            include: [
+                {
+                    model: HouseProcesses,
+                    where: {
+                        survey_status_input: ["Revisi", "Pengecekan Hasil", "Approved"]
+                    },
+                    include: [
+                        {
+                            model: HouseSurveyRevs,
+                            limit: 1,
+                            order: [['created_at', 'DESC']]
+                        }
+                    ]
+                }
+            ]
+        });
+        const filteredHouses = houses.filter(house =>
+            house.house_process?.house_survey_revs?.length > 0
+        );
+
+        res.status(200).json(filteredHouses);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        });
+    }
+};
 
 export const getDesignListHouse = async (req, res) => {
     try {
