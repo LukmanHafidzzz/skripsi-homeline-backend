@@ -56,6 +56,14 @@ const Users = db.define('users', {
     no_telp: {
         type: DataTypes.STRING,
     },
+    reset_password_token: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    reset_password_expired: {
+        type: DataTypes.DATE,
+        allowNull: true
+    }
 }, {
     freezeTableName: true,
     timestamps: true,
