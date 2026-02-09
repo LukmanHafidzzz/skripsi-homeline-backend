@@ -554,6 +554,7 @@ export const approveInputHasilSurvey = async (req, res) => {
         }
 
         inputHasilSurvey.survey_process = "Survey Selesai";
+        inputHasilSurvey.survey_status_input = "Approved";
 
         if (house.use_3d === "yes") {
             inputHasilSurvey.design_process = "Perlu Desain";
@@ -677,22 +678,32 @@ export const getDesignHasilInput = async (req, res) => {
             include: [
                 {
                     model: HouseProcesses,
+                    as: "house_process",
                     where: {
-                        design_process: {
-                            [Op.or]: [
-                                "Pengecekan Hasil",
-                                "Desain Selesai"
-                            ],
-                        },
+                        [Op.or]: [
+                            { design_status_input: "Pengecekan Hasil" },
+                            { design_process: "Desain Selesai" }
+                        ]
                     }
-                },
+                }
+            ],
+            order: [
+                [
+                    Sequelize.literal(`
+                        CASE 
+                            WHEN house_process.design_status_input = 'Pengecekan Hasil' THEN 1
+                            WHEN house_process.design_process = 'Desain Selesai' THEN 2
+                            ELSE 3
+                        END
+                    `),
+                    "ASC"
+                ]
             ]
         });
+
         res.status(200).json(houses);
     } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        })
+        res.status(500).json({ message: error.message });
     }
 }
 
@@ -739,6 +750,78 @@ export const approveInputHasilDesign = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             message: error.message
+        });
+    }
+};
+
+export const revInputHasilDesign = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { comment } = req.body;
+
+        if (!comment || comment.trim() === "") {
+            return res.status(400).json({
+                message: "Komentar revisi wajib diisi"
+            });
+        }
+
+        const inputDesign = await HouseProcesses.findOne({
+            where: {
+                house_id: id
+            }
+        });
+
+        if (!inputDesign) {
+            return res.status(404).json({
+                message: "Data desain tidak ditemukan"
+            });
+        }
+
+        await HouseDesignRevs.create({
+            house_design_id: inputDesign.id,
+            comment: comment
+        });
+
+        inputDesign.design_status_input = "Revisi";
+
+        await inputDesign.save();
+
+        res.status(200).json({
+            message: "Revisi berhasil dikirim"
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
+};
+export const getDesignRevisionListHouse = async (req, res) => {
+    try {
+        const houses = await Houses.findAll({
+            include: [
+                {
+                    model: HouseProcesses,
+                    where: {
+                        design_status_input: ["Revisi", "Pengecekan Hasil", "Approved"]
+                    },
+                    include: [
+                        {
+                            model: HouseDesignRevs,
+                            limit: 1,
+                            order: [['created_at', 'DESC']]
+                        }
+                    ]
+                }
+            ]
+        });
+        const filteredHouses = houses.filter(house =>
+            house.house_process?.house_design_revs?.length > 0
+        );
+
+        res.status(200).json(filteredHouses);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
         });
     }
 };
