@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
 import argon2 from "argon2";
 import { uploadToS3 } from "../utils/uploadS3.js";
@@ -704,3 +704,24 @@ export const getSearchHouseModel = async (req, res) => {
         });
     }
 };
+
+export const getProvinces = async (req, res) => {
+    try {
+        const response = await Address.findAll({
+            attributes: ['province'],
+            include: [
+                {
+                    model: Houses,
+                    where: { status: 'Approved' },
+                    attributes: [],
+                }
+            ],
+            group: ['province'],
+        });
+
+        const provinces = response.map(item => item.province);
+        res.status(200).json(provinces);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
