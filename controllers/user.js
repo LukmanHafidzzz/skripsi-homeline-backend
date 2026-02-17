@@ -3,6 +3,8 @@ import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilitie
 import argon2 from "argon2";
 import { uploadToS3 } from "../utils/uploadS3.js";
 import sharp from "sharp";
+import db from "../config/database.js";
+import { generateHouseCode } from "../helpers/generate.house.code.js";
 
 export const updateUser = async (req, res) => {
     const response = await Users.findOne({
@@ -412,11 +414,15 @@ export const getHouseModelAdvertisement = async (req, res) => {
 }
 
 export const addHouse = async (req, res) => {
+
     try {
         const user = await Users.findOne({
             where: { uuid: req.session.userId },
         });
-        if (!user) return res.status(404).json({ message: "User not found." });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
 
         const {
             title,
@@ -436,99 +442,146 @@ export const addHouse = async (req, res) => {
             use_3d,
         } = req.body;
 
-        if (!title || !building_area || !land_area || !price || !no_telp || !description || !link_maps ||
-            !province || !city || !subdistrict || !village || !full_address || !certificate_type_id || !use_3d) {
+        if (!title || !building_area || !land_area || !price || !no_telp || !description ||
+            !link_maps || !province || !city || !subdistrict || !village ||
+            !full_address || !certificate_type_id || !use_3d) {
+
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
         const use3DValue = use_3d === 'yes' ? 'yes' : 'no';
+
         let facilities = [];
+
         if (facilitiesString) {
             try {
                 facilities = JSON.parse(facilitiesString);
                 if (!Array.isArray(facilities)) facilities = [];
-            } catch (parseError) {
-                console.error('Error parsing facilities:', parseError);
+            } catch {
                 facilities = [];
             }
         }
 
-        const house = await Houses.create({
-            user_id: user.id,
-            title,
-            building_area: parseInt(building_area),
-            land_area: parseInt(land_area),
-            price: parseFloat(price),
-            no_telp,
-            description,
-            link_maps,
-            use_3d: use3DValue,
-        });
+        let uploadedPhotos = [];
+        let uploadedCertificate = null;
 
-        await Address.create({
-            house_id: house.id,
-            province,
-            city,
-            subdistrict,
-            village,
-            full_address
-        });
+        if (req.files?.photos) {
 
-        if (req.files && req.files.photos) {
-            const photoFiles = Array.isArray(req.files.photos) ? req.files.photos : [req.files.photos];
+            const photoFiles = Array.isArray(req.files.photos)
+                ? req.files.photos
+                : [req.files.photos];
+
             for (const photo of photoFiles) {
+
                 const webpBuffer = await sharp(photo.data)
                     .webp({ quality: 80 })
                     .toBuffer();
 
                 const fileName = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`;
+
                 const photoUrl = await uploadToS3(webpBuffer, fileName, 'image/webp');
 
-                await HousePhotos.create({
-                    house_id: house.id,
-                    photo: photoUrl
-                });
+                uploadedPhotos.push(photoUrl);
             }
         }
 
-        if (req.files && req.files.certificate) {
+        if (req.files?.certificate) {
+
             const certFile = req.files.certificate;
+
             const fileName = `certificates/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${certFile.name}`;
+
             const certUrl = await uploadToS3(certFile.data, fileName, certFile.mimetype);
 
-            await Certificates.create({
-                house_id: house.id,
-                certificate_file: certUrl,
-                certificate_type_id: parseInt(certificate_type_id)
-            });
+            uploadedCertificate = certUrl;
         }
 
-        // Insert facilities
-        if (facilities.length > 0) {
-            for (const facility of facilities) {
-                if (facility.facility_id && facility.quantity && facility.quantity > 0) {
-                    await HouseFacilities.create({
+        const t = await db.transaction();
+
+        try {
+
+            const houseCode = await generateHouseCode(city, t);
+
+            const house = await Houses.create({
+                house_code: houseCode,
+                user_id: user.id,
+                title,
+                building_area: parseInt(building_area),
+                land_area: parseInt(land_area),
+                price: parseFloat(price),
+                no_telp,
+                description,
+                link_maps,
+                use_3d: use3DValue,
+            }, { transaction: t });
+
+            await Address.create({
+                house_id: house.id,
+                province,
+                city,
+                subdistrict,
+                village,
+                full_address
+            }, { transaction: t });
+
+            if (uploadedPhotos.length > 0) {
+
+                const photoPayload = uploadedPhotos.map(photo => ({
+                    house_id: house.id,
+                    photo
+                }));
+
+                await HousePhotos.bulkCreate(photoPayload, { transaction: t });
+            }
+
+            if (uploadedCertificate) {
+
+                await Certificates.create({
+                    house_id: house.id,
+                    certificate_file: uploadedCertificate,
+                    certificate_type_id: parseInt(certificate_type_id)
+                }, { transaction: t });
+            }
+
+            if (facilities.length > 0) {
+
+                const facilityPayload = facilities
+                    .filter(f => f.facility_id && f.quantity > 0)
+                    .map(f => ({
                         house_id: house.id,
-                        facility_id: parseInt(facility.facility_id),
-                        quantity: parseInt(facility.quantity)
-                    });
+                        facility_id: parseInt(f.facility_id),
+                        quantity: parseInt(f.quantity)
+                    }));
+
+                if (facilityPayload.length > 0) {
+                    await HouseFacilities.bulkCreate(facilityPayload, { transaction: t });
                 }
             }
+
+            await t.commit();
+
+            return res.status(201).json({
+                message: 'House successfully created',
+                house_id: house.id,
+                house_code: houseCode
+            });
+
+        } catch (err) {
+
+            await t.rollback();
+            throw err;
+
         }
 
-        return res.status(201).json({
-            message: 'House successfully created',
-            house_id: house.id
-        });
-
     } catch (err) {
+
         console.error('Full error:', err);
+
         return res.status(500).json({
             message: 'Internal Server Error',
-            error: process.env.NODE_ENV === 'development' ? {
-                message: err.message,
-                stack: err.stack
-            } : err.message
+            error: process.env.NODE_ENV === 'development'
+                ? err.message
+                : undefined
         });
     }
 };

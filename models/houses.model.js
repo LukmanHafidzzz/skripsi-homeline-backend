@@ -21,6 +21,11 @@ const Houses = db.define('houses', {
             notEmpty: true,
         },
     },
+    house_code: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
     title: {
         type: DataTypes.STRING,
         allowNull: false,
