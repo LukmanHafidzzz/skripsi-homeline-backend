@@ -17,6 +17,7 @@ import {
     getSearchHouseDetail,
     getSearchHouseModel,
     getProvinces,
+    getCountHouseByUserId,
 } from "../controllers/user.js"
 
 const router = express.Router();
@@ -45,5 +46,7 @@ router.get('/advertisement/detail/model/:id', getHouseModelAdvertisement);
 router.post('/advertisement/add', addHouse);
 
 router.get('/provinces', getProvinces);
+
+router.get('/advertisement/count', getCountHouseByUserId);
 
 export default router;

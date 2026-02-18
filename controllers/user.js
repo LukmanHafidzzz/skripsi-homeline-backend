@@ -85,7 +85,6 @@ export const getFacilitiy = async (req, res) => {
     }
 }
 
-// House Handle
 export const getHouseByUserIdPending = async (req, res) => {
     try {
         if (!req.session.userId) {
@@ -725,3 +724,47 @@ export const getProvinces = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+export const getCountHouseByUserId = async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({
+                message: "Mohon login ke akun anda"
+            });
+        }
+
+        const users = await Users.findOne({
+            where: { uuid: req.session.userId }
+        });
+
+        if (!users) {
+            return res.status(404).json({
+                message: "User tidak ditemukan"
+            });
+        }
+
+        const statuses = ['approved', 'rejected', 'pending', 'waiting_payment', 'processing'];
+
+        const counts = await Promise.all(
+            statuses.map(status =>
+                Houses.count({
+                    where: { user_id: users.id, status }
+                })
+            )
+        );
+
+        const total = counts.reduce((sum, val) => sum + val, 0);
+
+        res.status(200).json({
+            total,
+            approved: counts[0],
+            rejected: counts[1],
+            pending: counts[2],
+            waiting_payment: counts[3],
+            processing: counts[4],
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
