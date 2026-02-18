@@ -22,6 +22,9 @@ import {
     getSurveyRevisionListHouse,
     revInputHasilDesign,
     getDesignRevisionListHouse,
+    getCountHouse,
+    CountSurveyHouse,
+    CountDesignHouse,
 } from "../controllers/admin.js";
 
 const router = express.Router();
@@ -50,5 +53,9 @@ router.get('/design/design-input', getDesignHasilInput);
 router.patch('/design/revision/:id', revInputHasilDesign);
 router.patch('/design/design-input/:id', approveInputHasilDesign);
 router.get('/design/revision-house-list', getDesignRevisionListHouse);
+
+router.get('/home/count-house', getCountHouse);
+router.get('/home/count-survey', CountSurveyHouse);
+router.get('/home/count-design', CountDesignHouse);
 
 export default router;

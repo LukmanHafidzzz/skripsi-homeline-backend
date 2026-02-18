@@ -825,3 +825,103 @@ export const getDesignRevisionListHouse = async (req, res) => {
         });
     }
 };
+
+export const getCountHouse = async (req, res) => {
+    try {
+        const statuses = ['approved', 'rejected', 'pending', 'waiting_payment', 'processing'];
+
+        const counts = await Promise.all(
+            statuses.map(status =>
+                Houses.count({
+                    where: { status }
+                })
+            )
+        );
+
+        const total = counts.reduce((sum, val) => sum + val, 0);
+
+        res.status(200).json({
+            total,
+            approved: counts[0],
+            rejected: counts[1],
+            pending: counts[2],
+            waiting_payment: counts[3],
+            processing: counts[4],
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const CountSurveyHouse = async (req, res) => {
+    try {
+        const surveyProcessStatuses = ['Perlu Survey', 'Sedang Survey', 'Survey Selesai'];
+        const surveyStatusInputStatuses = ['Approved', 'Pengecekan Hasil', 'Revisi'];
+
+        const [surveyProcessCounts, surveyStatusInputCounts] = await Promise.all([
+            Promise.all(
+                surveyProcessStatuses.map(status =>
+                    HouseProcesses.count({ where: { survey_process: status } })
+                )
+            ),
+            Promise.all(
+                surveyStatusInputStatuses.map(status =>
+                    HouseProcesses.count({ where: { survey_status_input: status } })
+                )
+            )
+        ]);
+
+        res.status(200).json({
+            survey_process: {
+                perlu_survey: surveyProcessCounts[0],
+                sedang_survey: surveyProcessCounts[1],
+                survey_selesai: surveyProcessCounts[2],
+            },
+            survey_status_input: {
+                approved: surveyStatusInputCounts[0],
+                pengecekan_hasil: surveyStatusInputCounts[1],
+                revisi: surveyStatusInputCounts[2],
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+export const CountDesignHouse = async (req, res) => {
+    try {
+        const designProcessStatuses = ['Perlu Desain', 'Sedang Desain', 'Desain Selesai'];
+        const designStatusInputStatuses = ['Approved', 'Pengecekan Hasil', 'Revisi'];
+
+        const [designProcessCounts, designStatusInputCounts] = await Promise.all([
+            Promise.all(
+                designProcessStatuses.map(status =>
+                    HouseProcesses.count({ where: { design_process: status } })
+                )
+            ),
+            Promise.all(
+                designStatusInputStatuses.map(status =>
+                    HouseProcesses.count({ where: { design_status_input: status } })
+                )
+            )
+        ]);
+
+        res.status(200).json({
+            design_process: {
+                perlu_desain: designProcessCounts[0],
+                sedang_desain: designProcessCounts[1],
+                desain_selesai: designProcessCounts[2],
+            },
+            design_status_input: {
+                approved: designStatusInputCounts[0],
+                pengecekan_hasil: designStatusInputCounts[1],
+                revisi: designStatusInputCounts[2],
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
