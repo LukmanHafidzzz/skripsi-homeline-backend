@@ -523,3 +523,39 @@ export const revHouseDesign = async (req, res) => {
         });
     }
 };
+
+export const CountDesignHouse = async (req, res) => {
+    try {
+        const designProcessStatuses = ['Perlu Desain', 'Sedang Desain', 'Desain Selesai'];
+        const designStatusInputStatuses = ['Approved', 'Pengecekan Hasil', 'Revisi'];
+
+        const [designProcessCounts, designStatusInputCounts] = await Promise.all([
+            Promise.all(
+                designProcessStatuses.map(status =>
+                    HouseProcesses.count({ where: { design_process: status } })
+                )
+            ),
+            Promise.all(
+                designStatusInputStatuses.map(status =>
+                    HouseProcesses.count({ where: { design_status_input: status } })
+                )
+            )
+        ]);
+
+        res.status(200).json({
+            design_process: {
+                perlu_desain: designProcessCounts[0],
+                sedang_desain: designProcessCounts[1],
+                desain_selesai: designProcessCounts[2],
+            },
+            design_status_input: {
+                approved: designStatusInputCounts[0],
+                pengecekan_hasil: designStatusInputCounts[1],
+                revisi: designStatusInputCounts[2],
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}

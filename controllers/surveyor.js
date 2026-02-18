@@ -417,3 +417,39 @@ export const revHouseSurvey = async (req, res) => {
         });
     }
 };
+
+export const CountSurveyHouse = async (req, res) => {
+    try {
+        const surveyProcessStatuses = ['Perlu Survey', 'Sedang Survey', 'Survey Selesai'];
+        const surveyStatusInputStatuses = ['Approved', 'Pengecekan Hasil', 'Revisi'];
+
+        const [surveyProcessCounts, surveyStatusInputCounts] = await Promise.all([
+            Promise.all(
+                surveyProcessStatuses.map(status =>
+                    HouseProcesses.count({ where: { survey_process: status } })
+                )
+            ),
+            Promise.all(
+                surveyStatusInputStatuses.map(status =>
+                    HouseProcesses.count({ where: { survey_status_input: status } })
+                )
+            )
+        ]);
+
+        res.status(200).json({
+            survey_process: {
+                perlu_survey: surveyProcessCounts[0],
+                sedang_survey: surveyProcessCounts[1],
+                survey_selesai: surveyProcessCounts[2],
+            },
+            survey_status_input: {
+                approved: surveyStatusInputCounts[0],
+                pengecekan_hasil: surveyStatusInputCounts[1],
+                revisi: surveyStatusInputCounts[2],
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}

@@ -11,6 +11,7 @@ import {
     saveDesignFileInfo,
     getDesignNeedRevListHouse,
     revHouseDesign,
+    CountDesignHouse,
 } from "../controllers/designer.js";
 
 const router = express.Router();
@@ -26,5 +27,6 @@ router.post('/get-presigned-url', getPresignedUrlForDesign);
 router.post('/save-design-file', saveDesignFileInfo);
 router.get('/rev-house-design', getDesignNeedRevListHouse);
 router.put('/rev-house-design', revHouseDesign);
+router.get('/count-design', CountDesignHouse);
 
 export default router;

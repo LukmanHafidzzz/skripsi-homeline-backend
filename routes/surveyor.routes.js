@@ -9,6 +9,7 @@ import {
     startSurvey,
     getSurveyNeedRevListHouse,
     revHouseSurvey,
+    CountSurveyHouse,
 } from "../controllers/surveyor.js";
 
 const router = express.Router();
@@ -22,5 +23,6 @@ router.get('/general-facility-types', getGeneralFacilityTypes);
 router.post('/input-house-survey', postInputHouseSurvey);
 router.get('/rev-house-survey', getSurveyNeedRevListHouse);
 router.put('/rev-house-survey', revHouseSurvey);
+router.get('/count-survey', CountSurveyHouse);
 
 export default router;
