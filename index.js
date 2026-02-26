@@ -16,43 +16,41 @@ dotenv.config();
 
 const app = express();
 
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
 if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
+const sessionStore = SequelizeStore(session.Store);
+const store = new sessionStore({
+    db: db,
+});
+
 const allowedOrigins = [
-    'http://localhost:5173',
     'https://skripsi-homeline-frontend.vercel.app',
+    'http://localhost:5173',
     process.env.FRONTEND_URL,
     process.env.CORS_ORIGIN
 ].filter(Boolean);
 
-const corsOptions = {
-    credentials: true,
-    origin: function (origin, callback) {
-        // Izinkan request tanpa origin (Postman, server-to-server)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
-        return callback(new Error('Not allowed by CORS'));
-    },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-    exposedHeaders: ['Set-Cookie']
-};
-
-// ✅ CORS harus PERTAMA sebelum middleware lain
-app.use(cors(corsOptions));
-
-// ✅ Handle preflight OPTIONS secara eksplisit
-app.options(/.*/, cors(corsOptions));
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-const sessionStore = SequelizeStore(session.Store);
-const store = new sessionStore({ db: db });
+app.use(
+    cors({
+        credentials: true,
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin) || origin === process.env.CORS_ORIGIN) {
+                return callback(null, true);
+            } else {
+                return callback(new Error('Not allowed by CORS'));
+            }
+        },
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+        exposedHeaders: ['Set-Cookie']
+    })
+);
 
 app.use(
     session({
@@ -62,8 +60,8 @@ app.use(
         store: store,
         name: 'connect.sid',
         cookie: {
-            secure: true,        // ✅ Selalu true di Vercel (HTTPS)
-            sameSite: 'none',    // ✅ Wajib 'none' untuk cross-origin
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000
         }
