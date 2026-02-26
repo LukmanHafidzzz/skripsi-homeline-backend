@@ -5,6 +5,7 @@ import { uploadToS3 } from "../utils/uploadS3.js";
 import sharp from "sharp";
 import db from "../config/database.js";
 import { generateHouseCode } from "../helpers/generate.house.code.js";
+import { uploadToS3, generatePresignedUrl } from "../utils/uploadS3.js";
 
 export const updateUser = async (req, res) => {
     const response = await Users.findOne({
