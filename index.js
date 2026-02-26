@@ -16,9 +16,6 @@ dotenv.config();
 
 const app = express();
 
-// ✅ Trust proxy HARUS paling atas
-app.set('trust proxy', 1);
-
 const allowedOrigins = [
     'http://localhost:5173',
     'https://skripsi-homeline-frontend.vercel.app',
