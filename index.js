@@ -95,9 +95,9 @@ app.use("/api/auth", AuthRoute);
 app.use("/api/user", UserRoute);
 // store.sync();
 
-// const PORT = process.env.APP_PORT
-// app.listen(PORT, () => {
-//     console.log(`🚀 Server running on PORT ${PORT}`);
-// });
+const PORT = process.env.APP_PORT
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on PORT ${PORT}`);
+});
 
 export default app;
