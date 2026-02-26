@@ -12,7 +12,6 @@ import {
     deleteHouseByUser,
     getHouseAdvertisementDetail,
     getHouseModelAdvertisement,
-    generatePresignedUrls,
     addHouse,
     getSearchHouse,
     getSearchHouseDetail,
