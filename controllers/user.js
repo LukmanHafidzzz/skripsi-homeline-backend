@@ -1,7 +1,7 @@
 import { Op, Sequelize } from "sequelize";
 import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
 import argon2 from "argon2";
-import { uploadToS3 } from "../utils/uploadS3.js";
+import { uploadToS3, generatePresignedUrl } from "../utils/uploadS3.js";
 import sharp from "sharp";
 import db from "../config/database.js";
 import { generateHouseCode } from "../helpers/generate.house.code.js";
@@ -412,95 +412,78 @@ export const getHouseModelAdvertisement = async (req, res) => {
     }
 }
 
-export const addHouse = async (req, res) => {
-
+export const generatePresignedUrls = async (req, res) => {
     try {
-        const user = await Users.findOne({
-            where: { uuid: req.session.userId },
-        });
+        const user = await Users.findOne({ where: { uuid: req.session.userId } });
+        if (!user) return res.status(404).json({ message: "User not found." });
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
+        const { files } = req.body;
+        // files: [{ fileName, contentType, fileType }]
+        // fileType: 'photo' | 'certificate'
+
+        if (!files || !Array.isArray(files)) {
+            return res.status(400).json({ message: 'Files array required' });
         }
 
+        const results = await Promise.all(files.map(async (file) => {
+            let key;
+            if (file.fileType === 'photo') {
+                key = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`;
+            } else {
+                key = `certificates/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${file.fileName}`;
+            }
+            const { presignedUrl, fileUrl } = await generatePresignedUrl(key, file.contentType);
+            return { presignedUrl, fileUrl, fileType: file.fileType };
+        }));
+
+        return res.status(200).json({ urls: results });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+export const addHouse = async (req, res) => {
+    try {
+        const user = await Users.findOne({ where: { uuid: req.session.userId } });
+        if (!user) return res.status(404).json({ message: "User not found." });
+
         const {
-            title,
-            building_area,
-            land_area,
-            price,
-            no_telp,
-            description,
-            link_maps,
-            province,
-            city,
-            subdistrict,
-            village,
-            full_address,
-            certificate_type_id,
-            facilities: facilitiesString,
-            use_3d,
+            title, building_area, land_area, price, no_telp, description,
+            link_maps, province, city, subdistrict, village, full_address,
+            certificate_type_id, facilities: facilitiesString, use_3d,
+            photo_urls,       // array URL foto dari S3
+            certificate_url,  // URL sertifikat dari S3
         } = req.body;
 
         if (!title || !building_area || !land_area || !price || !no_telp || !description ||
             !link_maps || !province || !city || !subdistrict || !village ||
             !full_address || !certificate_type_id || !use_3d) {
-
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
         const use3DValue = use_3d === 'yes' ? 'yes' : 'no';
 
         let facilities = [];
-
         if (facilitiesString) {
             try {
                 facilities = JSON.parse(facilitiesString);
                 if (!Array.isArray(facilities)) facilities = [];
-            } catch {
-                facilities = [];
-            }
+            } catch { facilities = []; }
         }
 
+        // Parse photo_urls dari string JSON
         let uploadedPhotos = [];
-        let uploadedCertificate = null;
-
-        if (req.files?.photos) {
-
-            const photoFiles = Array.isArray(req.files.photos)
-                ? req.files.photos
-                : [req.files.photos];
-
-            for (const photo of photoFiles) {
-
-                const webpBuffer = await sharp(photo.data)
-                    .webp({ quality: 80 })
-                    .toBuffer();
-
-                const fileName = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`;
-
-                const photoUrl = await uploadToS3(webpBuffer, fileName, 'image/webp');
-
-                uploadedPhotos.push(photoUrl);
-            }
-        }
-
-        if (req.files?.certificate) {
-
-            const certFile = req.files.certificate;
-
-            const fileName = `certificates/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${certFile.name}`;
-
-            const certUrl = await uploadToS3(certFile.data, fileName, certFile.mimetype);
-
-            uploadedCertificate = certUrl;
+        if (photo_urls) {
+            try {
+                uploadedPhotos = JSON.parse(photo_urls);
+                if (!Array.isArray(uploadedPhotos)) uploadedPhotos = [];
+            } catch { uploadedPhotos = []; }
         }
 
         const t = await db.transaction();
-
         try {
-
             const houseCode = await generateHouseCode(city, t);
-
             const house = await Houses.create({
                 house_code: houseCode,
                 user_id: user.id,
@@ -508,42 +491,28 @@ export const addHouse = async (req, res) => {
                 building_area: parseInt(building_area),
                 land_area: parseInt(land_area),
                 price: parseFloat(price),
-                no_telp,
-                description,
-                link_maps,
+                no_telp, description, link_maps,
                 use_3d: use3DValue,
             }, { transaction: t });
 
             await Address.create({
-                house_id: house.id,
-                province,
-                city,
-                subdistrict,
-                village,
-                full_address
+                house_id: house.id, province, city, subdistrict, village, full_address
             }, { transaction: t });
 
             if (uploadedPhotos.length > 0) {
-
-                const photoPayload = uploadedPhotos.map(photo => ({
-                    house_id: house.id,
-                    photo
-                }));
-
+                const photoPayload = uploadedPhotos.map(photo => ({ house_id: house.id, photo }));
                 await HousePhotos.bulkCreate(photoPayload, { transaction: t });
             }
 
-            if (uploadedCertificate) {
-
+            if (certificate_url) {
                 await Certificates.create({
                     house_id: house.id,
-                    certificate_file: uploadedCertificate,
+                    certificate_file: certificate_url,
                     certificate_type_id: parseInt(certificate_type_id)
                 }, { transaction: t });
             }
 
             if (facilities.length > 0) {
-
                 const facilityPayload = facilities
                     .filter(f => f.facility_id && f.quantity > 0)
                     .map(f => ({
@@ -551,36 +520,26 @@ export const addHouse = async (req, res) => {
                         facility_id: parseInt(f.facility_id),
                         quantity: parseInt(f.quantity)
                     }));
-
                 if (facilityPayload.length > 0) {
                     await HouseFacilities.bulkCreate(facilityPayload, { transaction: t });
                 }
             }
 
             await t.commit();
-
             return res.status(201).json({
                 message: 'House successfully created',
                 house_id: house.id,
                 house_code: houseCode
             });
-
         } catch (err) {
-
             await t.rollback();
             throw err;
-
         }
-
     } catch (err) {
-
         console.error('Full error:', err);
-
         return res.status(500).json({
             message: 'Internal Server Error',
-            error: process.env.NODE_ENV === 'development'
-                ? err.message
-                : undefined
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
         });
     }
 };
