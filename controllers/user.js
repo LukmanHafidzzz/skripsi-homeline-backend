@@ -1,7 +1,7 @@
 import { Op, Sequelize } from "sequelize";
 import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
 import argon2 from "argon2";
-import { uploadToS3 } from "../utils/uploadS3.js";
+import { generatePresignedUrl, uploadToS3 } from "../utils/uploadS3.js";
 import sharp from "sharp";
 import db from "../config/database.js";
 import { generateHouseCode } from "../helpers/generate.house.code.js";
@@ -412,6 +412,42 @@ export const getHouseModelAdvertisement = async (req, res) => {
     }
 }
 
+export const getPresignedUrlForHouseFile = async (req, res) => {
+    try {
+        const { fileName, contentType, folder } = req.body;
+
+        if (!fileName || !contentType || !folder) {
+            return res.status(400).json({
+                message: "fileName, contentType, dan folder diperlukan"
+            });
+        }
+
+        if (!req.session.userId) {
+            return res.status(401).json({
+                message: "Mohon login terlebih dahulu"
+            });
+        }
+
+        const uniqueFileName =
+            `${folder}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${fileName}`;
+
+        const { presignedUrl, fileUrl } =
+            await generatePresignedUrl(uniqueFileName, contentType, 3600);
+
+        return res.status(200).json({
+            presignedUrl,
+            fileUrl,
+            fileName: uniqueFileName
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Gagal generate presigned URL"
+        });
+    }
+};
+
 export const addHouse = async (req, res) => {
 
     try {
@@ -464,36 +500,10 @@ export const addHouse = async (req, res) => {
         let uploadedPhotos = [];
         let uploadedCertificate = null;
 
-        if (req.files?.photos) {
-
-            const photoFiles = Array.isArray(req.files.photos)
-                ? req.files.photos
-                : [req.files.photos];
-
-            for (const photo of photoFiles) {
-
-                const webpBuffer = await sharp(photo.data)
-                    .webp({ quality: 80 })
-                    .toBuffer();
-
-                const fileName = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`;
-
-                const photoUrl = await uploadToS3(webpBuffer, fileName, 'image/webp');
-
-                uploadedPhotos.push(photoUrl);
-            }
-        }
-
-        if (req.files?.certificate) {
-
-            const certFile = req.files.certificate;
-
-            const fileName = `certificates/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${certFile.name}`;
-
-            const certUrl = await uploadToS3(certFile.data, fileName, certFile.mimetype);
-
-            uploadedCertificate = certUrl;
-        }
+        const {
+            photos,
+            certificate_url,
+        } = req.body;
 
         const t = await db.transaction();
 
@@ -523,21 +533,19 @@ export const addHouse = async (req, res) => {
                 full_address
             }, { transaction: t });
 
-            if (uploadedPhotos.length > 0) {
-
-                const photoPayload = uploadedPhotos.map(photo => ({
+            if (photos && photos.length > 0) {
+                const photoPayload = photos.map(photo => ({
                     house_id: house.id,
                     photo
                 }));
-
                 await HousePhotos.bulkCreate(photoPayload, { transaction: t });
             }
 
-            if (uploadedCertificate) {
 
+            if (certificate_url) {
                 await Certificates.create({
                     house_id: house.id,
-                    certificate_file: uploadedCertificate,
+                    certificate_file: certificate_url,
                     certificate_type_id: parseInt(certificate_type_id)
                 }, { transaction: t });
             }

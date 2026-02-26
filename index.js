@@ -40,17 +40,17 @@ app.use(
         credentials: true,
         origin: function (origin, callback) {
             if (!origin) return callback(null, true);
-            if (allowedOrigins.includes(origin)) {
+            if (allowedOrigins.includes(origin) || origin === process.env.CORS_ORIGIN) {
                 return callback(null, true);
             } else {
-                return callback(null, false);
+                return callback(new Error('Not allowed by CORS'));
             }
         },
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+        exposedHeaders: ['Set-Cookie']
     })
 );
-
-app.options(/.*/, cors());
 
 app.use(
     session({
