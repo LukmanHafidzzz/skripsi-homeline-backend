@@ -44,7 +44,6 @@ router.delete('/advertisement/delete/:id', deleteHouseByUser)
 router.get('/advertisement/detail/:id', getHouseAdvertisementDetail);
 router.get('/advertisement/detail/model/:id', getHouseModelAdvertisement);
 
-router.post('/advertisement/presigned-url', generatePresignedUrls);
 router.post('/advertisement/add', addHouse);
 
 router.get('/provinces', getProvinces);
