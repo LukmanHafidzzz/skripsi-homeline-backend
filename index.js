@@ -40,15 +40,13 @@ app.use(
         credentials: true,
         origin: function (origin, callback) {
             if (!origin) return callback(null, true);
-            if (allowedOrigins.includes(origin) || origin === process.env.CORS_ORIGIN) {
+            if (allowedOrigins.includes(origin)) {
                 return callback(null, true);
             } else {
-                return callback(new Error('Not allowed by CORS'));
+                return callback(null, false);
             }
         },
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-        exposedHeaders: ['Set-Cookie']
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
     })
 );
 
