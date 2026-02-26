@@ -1,7 +1,7 @@
 import { Op, Sequelize } from "sequelize";
 import { Users, CertificateTypes, Houses, Payments, Certificates, HouseFacilities, HousePhotos, HouseSurveys, HouseProcesses, HouseDesigns, Address, Facilities, GeneralFacilities, GeneralFacilityTypes } from "../models/index.model.js";
 import argon2 from "argon2";
-import { uploadToS3, generatePresignedUrl } from "../utils/uploadS3.js";
+import { uploadToS3 } from "../utils/uploadS3.js";
 import sharp from "sharp";
 import db from "../config/database.js";
 import { generateHouseCode } from "../helpers/generate.house.code.js";
@@ -412,34 +412,6 @@ export const getHouseModelAdvertisement = async (req, res) => {
     }
 }
 
-export const getPresignedUrls = async (req, res) => {
-    try {
-        const { files } = req.body;
-
-        const urls = await Promise.all(
-            files.map(async (file) => {
-                const ext = file.name.split('.').pop();
-                const folder = file.type === 'application/pdf' ? 'certificates' : 'photos';
-                const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
-
-                const { presignedUrl, fileUrl } = await generatePresignedUrl(
-                    fileName,
-                    file.type,
-                    3600
-                );
-
-                return { presignedUrl, fileUrl, originalName: file.name };
-            })
-        );
-
-        return res.status(200).json({ urls });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ message: 'Failed to generate presigned URLs' });
-    }
-};
-
-
 export const addHouse = async (req, res) => {
 
     try {
@@ -467,13 +439,12 @@ export const addHouse = async (req, res) => {
             certificate_type_id,
             facilities: facilitiesString,
             use_3d,
-            photo_urls,
-            certificate_url,
         } = req.body;
 
         if (!title || !building_area || !land_area || !price || !no_telp || !description ||
             !link_maps || !province || !city || !subdistrict || !village ||
-            !full_address || !certificate_type_id || !use_3d || !photo_urls || !certificate_url) {
+            !full_address || !certificate_type_id || !use_3d) {
+
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
@@ -490,8 +461,8 @@ export const addHouse = async (req, res) => {
             }
         }
 
-        const uploadedPhotos = photo_urls ? JSON.parse(photo_urls) : [];
-        const uploadedCertificate = certificate_url || null;
+        let uploadedPhotos = [];
+        let uploadedCertificate = null;
 
         if (req.files?.photos) {
 
