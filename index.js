@@ -16,41 +16,40 @@ dotenv.config();
 
 const app = express();
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-if (process.env.NODE_ENV === 'production') {
-    app.set('trust proxy', 1);
-}
-
-const sessionStore = SequelizeStore(session.Store);
-const store = new sessionStore({
-    db: db,
-});
+// ✅ Trust proxy HARUS paling atas
+app.set('trust proxy', 1);
 
 const allowedOrigins = [
     'http://localhost:5173',
     'https://skripsi-homeline-frontend.vercel.app',
-    process.env.FRONTEND_URL,
-    process.env.CORS_ORIGIN
 ].filter(Boolean);
 
-app.use(
-    cors({
-        credentials: true,
-        origin: function (origin, callback) {
-            if (!origin) return callback(null, true);
-            if (allowedOrigins.includes(origin) || origin === process.env.CORS_ORIGIN) {
-                return callback(null, true);
-            } else {
-                return callback(new Error('Not allowed by CORS'));
-            }
-        },
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-        exposedHeaders: ['Set-Cookie']
-    })
-);
+const corsOptions = {
+    credentials: true,
+    origin: function (origin, callback) {
+        // Izinkan request tanpa origin (Postman, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
+};
+
+// ✅ CORS harus PERTAMA sebelum middleware lain
+app.use(cors(corsOptions));
+
+// ✅ Handle preflight OPTIONS secara eksplisit
+app.options('*', cors(corsOptions));
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+const sessionStore = SequelizeStore(session.Store);
+const store = new sessionStore({ db: db });
 
 app.use(
     session({
@@ -60,27 +59,19 @@ app.use(
         store: store,
         name: 'connect.sid',
         cookie: {
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            secure: true,        // ✅ Selalu true di Vercel (HTTPS)
+            sameSite: 'none',    // ✅ Wajib 'none' untuk cross-origin
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000
         }
     })
 );
 
-// (async() => {
-//     await db.sync();
-// })();
-
 app.use(fileUpload({
     createParentPath: true,
-    limits: {
-        fileSize: 50 * 1024 * 1024
-    },
+    limits: { fileSize: 50 * 1024 * 1024 },
     abortOnLimit: true,
-    responseOnLimit: "File size limit has been reached",
 }));
-
 
 app.use((req, res, next) => {
     console.log(`[${req.method}] ${req.originalUrl}`);
@@ -93,9 +84,10 @@ app.use("/api/designer", DesignerRoute);
 app.use("/api/admin/level-users", LevelUserRoute);
 app.use("/api/auth", AuthRoute);
 app.use("/api/user", UserRoute);
-// store.sync();
 
-const PORT = process.env.APP_PORT
+store.sync();
+
+const PORT = process.env.APP_PORT || 5773;
 app.listen(PORT, () => {
     console.log(`🚀 Server running on PORT ${PORT}`);
 });
