@@ -29,8 +29,8 @@ const store = new sessionStore({
 });
 
 const allowedOrigins = [
-    'https://skripsi-homeline-frontend.vercel.app',
     'http://localhost:5173',
+    'https://skripsi-homeline-frontend.vercel.app',
     process.env.FRONTEND_URL,
     process.env.CORS_ORIGIN
 ].filter(Boolean);
@@ -40,13 +40,15 @@ app.use(
         credentials: true,
         origin: function (origin, callback) {
             if (!origin) return callback(null, true);
-            if (allowedOrigins.includes(origin)) {
+            if (allowedOrigins.includes(origin) || origin === process.env.CORS_ORIGIN) {
                 return callback(null, true);
             } else {
-                return callback(null, false);
+                return callback(new Error('Not allowed by CORS'));
             }
         },
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+        exposedHeaders: ['Set-Cookie']
     })
 );
 
