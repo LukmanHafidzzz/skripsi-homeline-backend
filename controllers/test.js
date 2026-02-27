@@ -4,7 +4,7 @@ import Tests from "../models/test.model.js";
 
 export const getAllTests = async (req, res) => {
     try {
-        const data = await Tests.findAll({ order: [["createdAt", "DESC"]] });
+        const data = await Tests.findAll({ order: [["created_at", "DESC"]] });
         return res.status(200).json({ message: "Berhasil", data });
     } catch (error) {
         console.error("getAllTests error:", error);

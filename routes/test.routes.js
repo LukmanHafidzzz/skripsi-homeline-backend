@@ -7,7 +7,7 @@ import {
 
 const router = express.Router();
 
-router.get("/", getAllTests);
+router.get("/get", getAllTests);
 router.post("/presigned-url", getPresignedUrl);
 router.post("/", createTest);
 

@@ -3,7 +3,7 @@ import db from "../config/database.js";
 
 const { DataTypes } = Sequelize;
 
-const Tests = db.define('test', {
+const Tests = db.define('tests', {
     id: {
         type: DataTypes.BIGINT,
         autoIncrement: true,
@@ -22,6 +22,9 @@ const Tests = db.define('test', {
     },
 }, {
     freezeTableName: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
 });
 
 export default Tests;
