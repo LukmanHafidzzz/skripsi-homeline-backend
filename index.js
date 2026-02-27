@@ -10,6 +10,7 @@ import LevelUserRoute from "./routes/level.user.routes.js";
 import SurveyorRoute from './routes/surveyor.routes.js';
 import DesignerRoute from './routes/designer.routes.js';
 import AuthRoute from "./routes/auth.routes.js";
+import TestRoute from "./routes/test.routes.js";
 import fileUpload from "express-fileupload";
 
 dotenv.config();
@@ -94,6 +95,7 @@ app.use("/api/designer", DesignerRoute);
 app.use("/api/admin/level-users", LevelUserRoute);
 app.use("/api/auth", AuthRoute);
 app.use("/api/user", UserRoute);
+app.use("/api/tests", TestRoute);
 // store.sync();
 
 const PORT = process.env.APP_PORT
