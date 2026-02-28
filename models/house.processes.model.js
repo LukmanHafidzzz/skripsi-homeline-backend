@@ -43,7 +43,7 @@ const HouseProcesses = db.define("house_processes", {
             "Revisi",
             "Approved"
         ),
-        allowNull: false,
+        allowNull: true,
         defaultValue: null
     },
     design_status_input: {
@@ -52,7 +52,7 @@ const HouseProcesses = db.define("house_processes", {
             "Revisi",
             "Approved"
         ),
-        allowNull: false,
+        allowNull: true,
         defaultValue: null
     },
 }, {
