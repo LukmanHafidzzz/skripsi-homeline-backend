@@ -342,7 +342,7 @@ export const postHouseInputQr = async (req, res) => {
             return res.status(400).json({ error: "No file uploaded" });
         }
 
-        const fileName = `qr_${Date.now()}.png`;
+        const fileName = `qrs/${Date.now()}.webp`;
         const fileBuffer = qr.data;
         const mimetype = qr.mimetype;
 

@@ -12,7 +12,6 @@ import {
     deleteHouseByUser,
     getHouseAdvertisementDetail,
     getHouseModelAdvertisement,
-    getPresignedUrlForHouseFile,
     addHouse,
     getSearchHouse,
     getSearchHouseDetail,
@@ -44,7 +43,6 @@ router.delete('/advertisement/delete/:id', deleteHouseByUser)
 router.get('/advertisement/detail/:id', getHouseAdvertisementDetail);
 router.get('/advertisement/detail/model/:id', getHouseModelAdvertisement);
 
-router.post('/advertisement/presigned-url', getPresignedUrlForHouseFile);
 router.post('/advertisement/add', addHouse);
 
 router.get('/provinces', getProvinces);

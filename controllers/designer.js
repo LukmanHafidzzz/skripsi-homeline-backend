@@ -280,7 +280,6 @@ export const postInputHouseModel = async (req, res) => {
 
 export const getPresignedUrlForDesign = async (req, res) => {
     try {
-        // Debug logging
         console.log('Request body:', req.body);
         console.log('Request headers:', req.headers);
 
@@ -313,7 +312,8 @@ export const getPresignedUrlForDesign = async (req, res) => {
             });
         }
 
-        const uniqueFileName = `design_${Date.now()}_${fileName}`;
+        // const uniqueFileName = `design_${Date.now()}_${fileName}`;
+        const uniqueFileName = `models/design_${Date.now()}_${fileName}`;
         console.log('Generated unique filename:', uniqueFileName);
 
         const { presignedUrl, fileUrl } = await generatePresignedUrl(
