@@ -280,27 +280,20 @@ export const postInputHouseModel = async (req, res) => {
 
 export const getPresignedUrlForDesign = async (req, res) => {
     try {
-        console.log('Request body:', req.body);
-        console.log('Request headers:', req.headers);
-
         const { fileName, contentType } = req.body;
-
-        console.log('Extracted fileName:', fileName);
-        console.log('Extracted contentType:', contentType);
-
         if (!fileName || !contentType) {
             console.log('Missing required fields - fileName:', !!fileName, 'contentType:', !!contentType);
             return res.status(400).json({
                 message: "fileName dan contentType diperlukan",
                 received: { fileName, contentType }
             });
-        }
+        };
 
         if (!req.session.userId) {
             return res.status(401).json({
                 message: "Mohon login terlebih dahulu"
             });
-        }
+        };
 
         const user = await Users.findOne({
             where: { uuid: req.session.userId }
@@ -310,19 +303,16 @@ export const getPresignedUrlForDesign = async (req, res) => {
             return res.status(404).json({
                 message: "User tidak ditemukan"
             });
-        }
+        };
 
-        // const uniqueFileName = `design_${Date.now()}_${fileName}`;
-        const uniqueFileName = `models/design_${Date.now()}_${fileName}`;
-        console.log('Generated unique filename:', uniqueFileName);
-
+        const extension = fileName.split('.').pop();
+        const randomString = Math.random().toString(36).substring(2, 10);
+        const uniqueFileName = `models/design_${Date.now()}-${randomString}.${extension}`;
         const { presignedUrl, fileUrl } = await generatePresignedUrl(
             uniqueFileName,
             contentType,
             3600
         );
-
-        console.log('Generated URLs:', { presignedUrl, fileUrl });
 
         return res.status(200).json({
             presignedUrl,
