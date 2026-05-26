@@ -18,7 +18,6 @@ export const uploadToS3 = async (fileBuffer, fileName, mimetype) => {
         Key: fileName,
         Body: fileBuffer,
         ContentType: mimetype,
-        ACL: "public-read",
     };
 
     const command = new PutObjectCommand(params);
@@ -32,7 +31,6 @@ export const generatePresignedUrl = async (fileName, contentType, expiresIn = 36
         Bucket: process.env.BUCKET,
         Key: fileName,
         ContentType: contentType,
-        ACL: "public-read",
     };
 
     const command = new PutObjectCommand(params);
