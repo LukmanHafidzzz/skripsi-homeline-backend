@@ -141,9 +141,11 @@ export const forgotPassword = async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error);
+        console.log("Detail error:", error.message);
+        console.log("Stack:", error.stack);
         res.status(500).json({
-            message: "Gagal mengirim email reset password"
+            message: "Gagal mengirim email reset password",
+            detail: error.message
         });
     }
 };
